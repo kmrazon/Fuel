@@ -115,6 +115,9 @@
         .badge.service { background: rgba(16, 185, 129, 0.15); color: var(--success); }
 
         footer { text-align: center; margin-top: 40px; padding: 20px 0 10px 0; color: var(--text-secondary); font-size: 0.85rem; border-top: 1px solid var(--border); width: 100%; }
+        
+        .action-btn { background: transparent; border: none; cursor: pointer; font-size: 1.1rem; padding: 0 4px; transition: transform 0.2s; }
+        .action-btn:hover { transform: scale(1.2); }
     </style>
 </head>
 <body>
@@ -142,7 +145,7 @@
         <h1>Almost done!</h1>
         <p>What motorcycle will you be tracking?</p>
         <div class="form-group" style="text-align: left;">
-            <label>Bike Model (e.g. Pulsar N160, Hornet 2.0)</label>
+            <label>Bike Model</label>
             <input type="text" id="regBikeModel" placeholder="Enter model here...">
         </div>
         <button id="regBtn" class="btn" style="width: 100%; padding: 12px;" onclick="completeRegistration()">Start Tracking</button>
@@ -204,22 +207,27 @@
 
     <div class="main-layout">
         <div class="card">
-            <h2>New Entry</h2>
+            <h2 id="formTitle">New Entry</h2>
             <div class="tabs">
                 <div class="tab active" id="tab-fuel" onclick="switchType('fuel')">Fueling</div>
                 <div class="tab" id="tab-service" onclick="switchType('service')">Service</div>
             </div>
             <form id="logForm" onsubmit="saveEntry(event)">
                 <input type="hidden" id="entryType" value="fuel">
+                <input type="hidden" id="editId" value="">
+                
                 <div class="form-group"><label>Date</label><input type="date" id="date" required></div>
                 <div class="form-group"><label>Current odometer (km)</label><input type="number" id="odo" step="any" required></div>
                 <div class="form-group"><label>Total Cost (৳)</label><input type="number" id="totalCost" step="any" required oninput="calculateUnitCost()"></div>
+                
                 <div id="fuelFields">
                     <div class="form-group"><label>Fuel volume (Liters)</label><input type="number" id="volume" step="any" oninput="calculateUnitCost()"></div>
                     <div class="form-group"><label>Unit price (৳/L)</label><input type="number" id="unitPrice" step="any" readonly style="color: var(--text-secondary);"></div>
                 </div>
+                
                 <div class="form-group"><label>Notes (Parts, Station, etc.)</label><textarea id="notes" rows="1" placeholder="e.g. Engine Oil Change, Chain Lube..."></textarea></div>
                 <button type="submit" id="saveBtn" class="btn" style="width: 100%; border-radius: 30px; padding: 12px; margin-top: 10px;">SAVE ENTRY</button>
+                <button type="button" id="cancelEditBtn" class="btn-outline hidden" style="width: 100%; border-radius: 30px; padding: 12px; margin-top: 10px;" onclick="cancelEdit()">CANCEL EDIT</button>
             </form>
         </div>
 
@@ -228,7 +236,7 @@
             <div class="table-container">
                 <table id="logTable">
                     <thead>
-                        <tr><th>Date</th><th>Type</th><th>Odo</th><th>Cost</th><th>Vol</th><th>km/L</th><th>Notes</th></tr>
+                        <tr><th>Date</th><th>Type</th><th>Odo</th><th>Cost</th><th>Vol</th><th>km/L</th><th>Notes</th><th></th></tr>
                     </thead>
                     <tbody id="logTableBody"></tbody>
                 </table>
@@ -261,7 +269,7 @@
     let currentUser = null;
     let dbData = [];
     let myChart = null;
-    let unsubscribe = null; // Used to stop listening to old data when logging out
+    let unsubscribe = null; 
     document.getElementById('date').valueAsDate = new Date();
 
     // --- AUTHENTICATION LOGIC ---
@@ -271,7 +279,7 @@
             checkRegistrationAndLoadApp();
         } else {
             currentUser = null;
-            if(unsubscribe) unsubscribe(); // Stop downloading data when logged out
+            if(unsubscribe) unsubscribe(); 
             showPage('landingPage');
         }
     });
@@ -286,7 +294,6 @@
     }
 
     function checkRegistrationAndLoadApp() {
-        // Fetch the user's profile from the Cloud
         db.collection('users').doc(currentUser.uid).get().then(doc => {
             if (doc.exists && doc.data().bikeModel) {
                 document.getElementById('displayBikeModel').innerText = doc.data().bikeModel;
@@ -310,7 +317,6 @@
         
         document.getElementById('regBtn').innerText = "Saving to Cloud...";
         
-        // Save the bike model to the Cloud
         db.collection('users').doc(currentUser.uid).set({ bikeModel: model }, { merge: true })
         .then(() => {
             document.getElementById('displayBikeModel').innerText = model;
@@ -352,7 +358,6 @@
     }
 
     function initApp() {
-        // Build chart if it doesn't exist
         if(!myChart) {
             const ctx = document.getElementById('economyChart').getContext('2d');
             myChart = new Chart(ctx, {
@@ -362,7 +367,6 @@
             });
         }
 
-        // LIVE REAL-TIME CLOUD LISTENER
         if (unsubscribe) unsubscribe();
         unsubscribe = db.collection('users').doc(currentUser.uid).collection('logs')
             .onSnapshot(snapshot => {
@@ -376,12 +380,58 @@
             });
     }
 
+    // --- EDIT & DELETE LOGIC ---
+    function deleteEntry(id) {
+        if(confirm("Are you sure you want to completely delete this entry?")) {
+            db.collection('users').doc(currentUser.uid).collection('logs').doc(id.toString()).delete()
+            .catch(err => alert("Error deleting: " + err.message));
+        }
+    }
+
+    function editEntry(id) {
+        const entry = dbData.find(d => d.id === id);
+        if(!entry) return;
+        
+        document.getElementById('formTitle').innerText = "Edit Entry";
+        document.getElementById('editId').value = entry.id;
+        
+        switchType(entry.type);
+        
+        document.getElementById('date').value = entry.date;
+        document.getElementById('odo').value = entry.odo;
+        document.getElementById('totalCost').value = entry.totalCost;
+        
+        if(entry.type === 'fuel') {
+            document.getElementById('volume').value = entry.volume || '';
+            document.getElementById('unitPrice').value = entry.unitPrice || '';
+        }
+        
+        document.getElementById('notes').value = entry.notes || '';
+        
+        document.getElementById('saveBtn').innerText = "UPDATE ENTRY";
+        document.getElementById('cancelEditBtn').classList.remove('hidden');
+        
+        // Scroll smoothly to the form
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    function cancelEdit() {
+        document.getElementById('formTitle').innerText = "New Entry";
+        document.getElementById('editId').value = "";
+        document.getElementById('logForm').reset();
+        document.getElementById('date').valueAsDate = new Date();
+        document.getElementById('saveBtn').innerText = "SAVE ENTRY";
+        document.getElementById('cancelEditBtn').classList.add('hidden');
+    }
+
     function saveEntry(e) {
         e.preventDefault();
         const saveBtn = document.getElementById('saveBtn');
+        const editId = document.getElementById('editId').value;
+        const entryId = editId ? parseInt(editId) : Date.now();
+        
         saveBtn.innerText = "SAVING TO CLOUD...";
         
-        const entryId = Date.now();
         const entry = {
             id: entryId,
             type: document.getElementById('entryType').value,
@@ -393,17 +443,16 @@
             notes: document.getElementById('notes').value
         };
 
-        // Write directly to Firestore Cloud Database
         db.collection('users').doc(currentUser.uid).collection('logs').doc(entryId.toString()).set(entry)
         .then(() => {
-            saveBtn.innerText = "SAVED!";
-            setTimeout(() => saveBtn.innerText = "SAVE ENTRY", 1500);
-            document.getElementById('logForm').reset();
-            document.getElementById('date').valueAsDate = new Date();
+            saveBtn.innerText = editId ? "UPDATED!" : "SAVED!";
+            setTimeout(() => {
+                cancelEdit(); // Resets form and UI elements cleanly
+            }, 1500);
         })
         .catch(error => {
             alert("Error saving: " + error.message);
-            saveBtn.innerText = "SAVE ENTRY";
+            saveBtn.innerText = editId ? "UPDATE ENTRY" : "SAVE ENTRY";
         });
     }
 
@@ -446,7 +495,19 @@
         const tbody = document.getElementById('logTableBody'); tbody.innerHTML = '';
         [...sortedData].reverse().forEach(item => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td style="white-space: nowrap;">${item.date}</td><td><span class="badge ${item.type}">${item.type}</span></td><td>${item.odo.toLocaleString()}</td><td>৳${item.totalCost.toFixed(0)}</td><td>${item.volume ? item.volume + 'L' : '-'}</td><td style="color:var(--accent);">${item.calculatedMileage ? item.calculatedMileage.toFixed(1) : '-'}</td><td style="color:var(--text-secondary); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.notes || ''}</td>`;
+            tr.innerHTML = `
+                <td style="white-space: nowrap;">${item.date}</td>
+                <td><span class="badge ${item.type}">${item.type}</span></td>
+                <td>${item.odo.toLocaleString()}</td>
+                <td>৳${item.totalCost.toFixed(0)}</td>
+                <td>${item.volume ? item.volume + 'L' : '-'}</td>
+                <td style="color:var(--accent);">${item.calculatedMileage ? item.calculatedMileage.toFixed(1) : '-'}</td>
+                <td style="color:var(--text-secondary); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.notes || ''}</td>
+                <td style="white-space: nowrap;">
+                    <button class="action-btn" title="Edit" onclick="editEntry(${item.id})">✏️</button>
+                    <button class="action-btn" title="Delete" onclick="deleteEntry(${item.id})">🗑️</button>
+                </td>
+            `;
             tbody.appendChild(tr);
         });
     }
@@ -474,7 +535,6 @@
             const lines = e.target.result.split('\n');
             let importCount = 0;
             
-            // Use Firestore Batch to safely upload multiple files at once
             let batch = db.batch();
             
             for(let i = 1; i < lines.length; i++) {
@@ -497,7 +557,6 @@
                         notes: cols[6] ? cols[6].replace(/"/g, '').trim() : ''
                     };
                     
-                    // Add to batch upload
                     let docRef = db.collection('users').doc(currentUser.uid).collection('logs').doc(entryId.toString());
                     batch.set(docRef, entry);
                     importCount++;
