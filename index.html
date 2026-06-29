@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PitStop - Fuel & Maintenance Log</title>
+    <title>Vehicle Expenditure - Fuel & Maintenance Log</title>
     
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#121212">
@@ -33,16 +33,21 @@
             margin: 0;
             padding: 20px;
             -webkit-font-smoothing: antialiased;
+            display: flex;
+            flex-direction: column;
+            min-height: 95vh;
         }
 
-        .container { max-width: 1100px; margin: 0 auto; }
+        .container { flex: 1; max-width: 1100px; margin: 0 auto; width: 100%; }
 
         header {
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid var(--border);
         }
         .header-title { display: flex; align-items: center; gap: 10px; }
-        h1 { margin: 0; font-size: 1.8rem; font-weight: 600; color: var(--accent); }
+        h1 { margin: 0; font-size: 1.6rem; font-weight: 600; color: var(--accent); }
+        @media (min-width: 600px) { h1 { font-size: 1.8rem; } }
+        
         h2 { margin: 0 0 15px 0; font-size: 1.2rem; font-weight: 500; }
         h3 { margin: 0 0 15px 0; font-size: 1.1rem; font-weight: 500; color: var(--text-secondary); }
         
@@ -102,6 +107,16 @@
         .badge { font-size: 0.7rem; font-weight: 600; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; }
         .badge.fuel { background: rgba(255, 107, 0, 0.15); color: var(--accent); }
         .badge.service { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px 0 10px 0;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border);
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -116,7 +131,7 @@
                 <path d="M14 9h6"></path>
                 <path d="M17 9v11a2 2 0 0 1-2 2h-2"></path>
             </svg>
-            <h1>PitStop</h1>
+            <h1>Vehicle Expenditure</h1>
         </div>
         <div>
             <button class="btn btn-outline" onclick="document.getElementById('csvFile').click()">Import CSV</button>
@@ -227,10 +242,14 @@
     </div>
 </div>
 
+<footer>
+    This web app is developed by Kanon Al Mozadid. Copyright reserved.
+</footer>
+
 <script>
     // --- APP CONFIGURATION ---
     // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxqGcBB-5sT7sq-YswVjwuU-kJxdmXyJcATGRTT2ZA6rc3OOVx_dp6BYTXqD7Yk06nS/exec"; 
+    const WEB_APP_URL = ""; 
 
     let dbData = [];
     let myChart = null;
@@ -311,7 +330,6 @@
         localStorage.setItem('pitstop_data_v3', JSON.stringify(dbData));
         processAndRender();
         
-        // Auto-Sync to Drive if URL is provided
         if (WEB_APP_URL) {
             saveBtn.innerText = "Syncing...";
             fetch(WEB_APP_URL, {
@@ -378,4 +396,125 @@
         let avgMileage = fuelLogs.length ? fuelLogs.reduce((s, i) => s + i.calculatedMileage, 0) / fuelLogs.length : 0;
 
         document.getElementById('stat-distance').innerText = `${totalDistance.toLocaleString()} km`;
-        document.getElementById('stat-mileage').innerText = `${
+        document.getElementById('stat-mileage').innerText = `${avgMileage.toFixed(1)} km/L`;
+        document.getElementById('stat-total-cost').innerText = `৳${totalSpend.toLocaleString(undefined, {minimumFractionDigits: 0})}`;
+        document.getElementById('stat-monthly-cost').innerText = `৳${monthlySpend.toLocaleString(undefined, {minimumFractionDigits: 0})}`;
+
+        renderMaintenanceStatus(highestOdo, lastServiceOdo);
+
+        const tbody = document.getElementById('logTableBody');
+        tbody.innerHTML = '';
+        [...sortedData].reverse().forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="white-space: nowrap;">${item.date}</td>
+                <td><span class="badge ${item.type}">${item.type}</span></td>
+                <td>${item.odo.toLocaleString()}</td>
+                <td>৳${item.totalCost.toFixed(0)}</td>
+                <td>${item.volume ? item.volume + 'L' : '-'}</td>
+                <td style="color:var(--accent);">${item.calculatedMileage ? item.calculatedMileage.toFixed(1) : '-'}</td>
+                <td style="color:var(--text-secondary); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.notes || ''}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderMaintenanceStatus(currentOdo, lastServiceOdo) {
+        const container = document.getElementById('maintenance-alerts');
+        const kmSinceService = currentOdo - lastServiceOdo;
+        
+        const tasks = [
+            { name: "Chain Lube & Clean", interval: 500, color: "#3b82f6" },
+            { name: "Engine Oil Change", interval: 2000, color: "#ff6b00" }
+        ];
+
+        let html = '';
+        tasks.forEach(task => {
+            let percentage = Math.min((kmSinceService / task.interval) * 100, 100);
+            let remaining = task.interval - kmSinceService;
+            let statusText = remaining > 0 ? `${remaining} km left` : `DUE NOW`;
+            let barColor = percentage > 90 ? 'var(--danger)' : task.color;
+
+            html += `
+                <div class="maintenance-item">
+                    <div class="maintenance-header">
+                        <span style="color: var(--text-primary);">${task.name}</span>
+                        <span style="color: ${percentage > 90 ? 'var(--danger)' : 'var(--text-secondary)'}; font-weight: 500;">
+                            ${statusText}
+                        </span>
+                    </div>
+                    <div class="progress-bg">
+                        <div class="progress-fill" style="width: ${percentage}%; background: ${barColor};"></div>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html || '<p>No data yet</p>';
+    }
+
+    function handleCSVImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const lines = e.target.result.split('\n');
+            let importCount = 0;
+
+            for(let i = 1; i < lines.length; i++) {
+                if(!lines[i].trim()) continue;
+                
+                const cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                
+                if(cols.length >= 4) {
+                    let rawType = cols[0].replace(/"/g, '').trim().toLowerCase();
+                    let type = rawType.includes('fuel') ? 'fuel' : 'service';
+
+                    let rawDate = cols[2].replace(/"/g, '').trim();
+                    let dateObj = new Date(rawDate);
+                    if(isNaN(dateObj.getTime())) dateObj = new Date(); 
+                    
+                    let formattedDate = dateObj.getFullYear() + '-' + 
+                                        String(dateObj.getMonth() + 1).padStart(2, '0') + '-' + 
+                                        String(dateObj.getDate()).padStart(2, '0');
+
+                    let odo = parseFloat(cols[1]);
+                    let totalCost = parseFloat(cols[3]);
+                    if(isNaN(totalCost)) totalCost = parseFloat(cols[7]) || 0; 
+                    
+                    let volume = parseFloat(cols[4]);
+                    let unitPrice = parseFloat(cols[5]);
+                    let notes = cols[6] ? cols[6].replace(/"/g, '').trim() : '';
+
+                    dbData.push({
+                        id: Date.now() + i,
+                        type: type,
+                        odo: isNaN(odo) ? 0 : odo,
+                        date: formattedDate,
+                        totalCost: isNaN(totalCost) ? 0 : totalCost,
+                        volume: isNaN(volume) ? null : volume,
+                        unitPrice: isNaN(unitPrice) ? null : unitPrice,
+                        notes: notes
+                    });
+                    
+                    importCount++;
+                }
+            }
+
+            if(importCount > 0) {
+                localStorage.setItem('pitstop_data_v3', JSON.stringify(dbData));
+                processAndRender();
+                alert(`Successfully imported ${importCount} entries!`);
+            } else {
+                alert("No valid data found in CSV. Please check the format.");
+            }
+            
+            event.target.value = '';
+        };
+        reader.readAsText(file);
+    }
+
+    window.onload = initApp;
+</script>
+</body>
+</html>
