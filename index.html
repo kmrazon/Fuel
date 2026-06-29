@@ -9,8 +9,12 @@
     <meta name="theme-color" content="#121212">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏍️</text></svg>">
     
+    <!-- Firebase Compat SDKs (Auth & Cloud Firestore) -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
@@ -115,6 +119,7 @@
 </head>
 <body>
 
+<!-- 1. LANDING PAGE -->
 <div id="landingPage" class="auth-overlay">
     <div class="auth-card">
         <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 15px;">
@@ -131,6 +136,7 @@
     </div>
 </div>
 
+<!-- 2. BIKE REGISTRATION PAGE -->
 <div id="registrationPage" class="auth-overlay hidden">
     <div class="auth-card">
         <h1>Almost done!</h1>
@@ -139,10 +145,11 @@
             <label>Bike Model (e.g. Pulsar N160, Hornet 2.0)</label>
             <input type="text" id="regBikeModel" placeholder="Enter model here...">
         </div>
-        <button class="btn" style="width: 100%; padding: 12px;" onclick="completeRegistration()">Start Tracking</button>
+        <button id="regBtn" class="btn" style="width: 100%; padding: 12px;" onclick="completeRegistration()">Start Tracking</button>
     </div>
 </div>
 
+<!-- 3. MAIN DASHBOARD -->
 <div id="mainApp" class="app-wrapper hidden">
     <header>
         <div class="header-title">
@@ -154,7 +161,7 @@
         </div>
         <div class="header-actions">
             <div class="user-badge">
-                <span id="displayBikeModel">My Bike</span>
+                <span id="displayBikeModel">Loading...</span>
             </div>
             <button class="btn-outline" style="padding: 5px 10px; font-size: 0.8rem;" onclick="signOut()">Logout</button>
             <button class="btn-outline" onclick="document.getElementById('csvFile').click()">Import CSV</button>
@@ -234,7 +241,7 @@
 
 <script>
     // ==========================================
-    // FIREBASE CONFIGURATION (Using your specific keys)
+    // FIREBASE CONFIGURATION
     // ==========================================
     const firebaseConfig = {
         apiKey: "AIzaSyDZznwqirEhn7kk40ouixwB0hrmGCZGJ0A",
@@ -246,13 +253,15 @@
         measurementId: "G-WE7EWWQSML"
     };
 
-    // Initialize Firebase
+    // Initialize Firebase Auth & Firestore
     firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
     // --- STATE VARIABLES ---
     let currentUser = null;
     let dbData = [];
     let myChart = null;
+    let unsubscribe = null; // Used to stop listening to old data when logging out
     document.getElementById('date').valueAsDate = new Date();
 
     // --- AUTHENTICATION LOGIC ---
@@ -262,6 +271,7 @@
             checkRegistrationAndLoadApp();
         } else {
             currentUser = null;
+            if(unsubscribe) unsubscribe(); // Stop downloading data when logged out
             showPage('landingPage');
         }
     });
@@ -276,14 +286,19 @@
     }
 
     function checkRegistrationAndLoadApp() {
-        const bikeModel = localStorage.getItem(`pitstop_bike_${currentUser.uid}`);
-        if(bikeModel) {
-            document.getElementById('displayBikeModel').innerText = bikeModel;
-            initApp();
-            showPage('mainApp');
-        } else {
-            showPage('registrationPage');
-        }
+        // Fetch the user's profile from the Cloud
+        db.collection('users').doc(currentUser.uid).get().then(doc => {
+            if (doc.exists && doc.data().bikeModel) {
+                document.getElementById('displayBikeModel').innerText = doc.data().bikeModel;
+                showPage('mainApp');
+                initApp();
+            } else {
+                showPage('registrationPage');
+            }
+        }).catch(err => {
+            console.error("Error fetching user data", err);
+            alert("Error connecting to database.");
+        });
     }
 
     function completeRegistration() {
@@ -292,10 +307,20 @@
             alert("Please enter a bike model to continue.");
             return;
         }
-        localStorage.setItem(`pitstop_bike_${currentUser.uid}`, model);
-        document.getElementById('displayBikeModel').innerText = model;
-        initApp();
-        showPage('mainApp');
+        
+        document.getElementById('regBtn').innerText = "Saving to Cloud...";
+        
+        // Save the bike model to the Cloud
+        db.collection('users').doc(currentUser.uid).set({ bikeModel: model }, { merge: true })
+        .then(() => {
+            document.getElementById('displayBikeModel').innerText = model;
+            document.getElementById('regBtn').innerText = "Start Tracking";
+            showPage('mainApp');
+            initApp();
+        }).catch(err => {
+            alert("Error saving: " + err.message);
+            document.getElementById('regBtn').innerText = "Start Tracking";
+        });
     }
 
     function showPage(pageId) {
@@ -327,11 +352,7 @@
     }
 
     function initApp() {
-        const storageKey = `pitstop_data_${currentUser.uid}`;
-        const localStore = localStorage.getItem(storageKey);
-        if (localStore) dbData = JSON.parse(localStore);
-        else dbData = []; 
-        
+        // Build chart if it doesn't exist
         if(!myChart) {
             const ctx = document.getElementById('economyChart').getContext('2d');
             myChart = new Chart(ctx, {
@@ -340,32 +361,50 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: '#333333' }, ticks: { color: '#a1a1aa' } }, y: { grid: { color: '#333333' }, ticks: { color: '#a1a1aa' } } } }
             });
         }
-        processAndRender();
+
+        // LIVE REAL-TIME CLOUD LISTENER
+        if (unsubscribe) unsubscribe();
+        unsubscribe = db.collection('users').doc(currentUser.uid).collection('logs')
+            .onSnapshot(snapshot => {
+                dbData = [];
+                snapshot.forEach(doc => {
+                    dbData.push(doc.data());
+                });
+                processAndRender();
+            }, error => {
+                console.error("Error listening to logs:", error);
+            });
     }
 
     function saveEntry(e) {
         e.preventDefault();
-        const type = document.getElementById('entryType').value;
         const saveBtn = document.getElementById('saveBtn');
+        saveBtn.innerText = "SAVING TO CLOUD...";
         
+        const entryId = Date.now();
         const entry = {
-            id: Date.now(), type: type,
+            id: entryId,
+            type: document.getElementById('entryType').value,
             odo: parseFloat(document.getElementById('odo').value),
             date: document.getElementById('date').value,
             totalCost: parseFloat(document.getElementById('totalCost').value),
-            volume: type === 'fuel' ? parseFloat(document.getElementById('volume').value) : null,
-            unitPrice: type === 'fuel' ? parseFloat(document.getElementById('unitPrice').value) : null,
+            volume: document.getElementById('entryType').value === 'fuel' ? parseFloat(document.getElementById('volume').value) : null,
+            unitPrice: document.getElementById('entryType').value === 'fuel' ? parseFloat(document.getElementById('unitPrice').value) : null,
             notes: document.getElementById('notes').value
         };
 
-        dbData.push(entry);
-        localStorage.setItem(`pitstop_data_${currentUser.uid}`, JSON.stringify(dbData));
-        processAndRender();
-        
-        saveBtn.innerText = "SAVED!";
-        setTimeout(() => saveBtn.innerText = "SAVE ENTRY", 1500);
-        document.getElementById('logForm').reset();
-        document.getElementById('date').valueAsDate = new Date();
+        // Write directly to Firestore Cloud Database
+        db.collection('users').doc(currentUser.uid).collection('logs').doc(entryId.toString()).set(entry)
+        .then(() => {
+            saveBtn.innerText = "SAVED!";
+            setTimeout(() => saveBtn.innerText = "SAVE ENTRY", 1500);
+            document.getElementById('logForm').reset();
+            document.getElementById('date').valueAsDate = new Date();
+        })
+        .catch(error => {
+            alert("Error saving: " + error.message);
+            saveBtn.innerText = "SAVE ENTRY";
+        });
     }
 
     function processAndRender() {
@@ -434,6 +473,10 @@
         reader.onload = function(e) {
             const lines = e.target.result.split('\n');
             let importCount = 0;
+            
+            // Use Firestore Batch to safely upload multiple files at once
+            let batch = db.batch();
+            
             for(let i = 1; i < lines.length; i++) {
                 if(!lines[i].trim()) continue;
                 const cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
@@ -444,20 +487,28 @@
                     let formattedDate = dateObj.getFullYear() + '-' + String(dateObj.getMonth() + 1).padStart(2, '0') + '-' + String(dateObj.getDate()).padStart(2, '0');
                     let odo = parseFloat(cols[1]), totalCost = parseFloat(cols[3]);
                     if(isNaN(totalCost)) totalCost = parseFloat(cols[7]) || 0; 
-                    dbData.push({
-                        id: Date.now() + i, type: type, odo: isNaN(odo) ? 0 : odo, date: formattedDate,
+                    
+                    let entryId = Date.now() + i;
+                    let entry = {
+                        id: entryId, type: type, odo: isNaN(odo) ? 0 : odo, date: formattedDate,
                         totalCost: isNaN(totalCost) ? 0 : totalCost,
                         volume: isNaN(parseFloat(cols[4])) ? null : parseFloat(cols[4]),
                         unitPrice: isNaN(parseFloat(cols[5])) ? null : parseFloat(cols[5]),
                         notes: cols[6] ? cols[6].replace(/"/g, '').trim() : ''
-                    });
+                    };
+                    
+                    // Add to batch upload
+                    let docRef = db.collection('users').doc(currentUser.uid).collection('logs').doc(entryId.toString());
+                    batch.set(docRef, entry);
                     importCount++;
                 }
             }
             if(importCount > 0) {
-                localStorage.setItem(`pitstop_data_${currentUser.uid}`, JSON.stringify(dbData));
-                processAndRender();
-                alert(`Successfully imported ${importCount} entries!`);
+                batch.commit().then(() => {
+                    alert(`Successfully imported ${importCount} entries to the Cloud Database!`);
+                }).catch(err => {
+                    alert("Error importing to cloud: " + err.message);
+                });
             }
             event.target.value = '';
         };
