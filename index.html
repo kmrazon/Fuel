@@ -6,188 +6,48 @@
     <title>Vehicle Expenditure</title>
     
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#121212" id="themeColorMeta">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏍️</text></svg>">
+    <meta name="theme-color" content="#121212">
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-<style>
-    /* ... keep previous styles ... */
-
-    /* Fix table scrolling */
-    .table-container { 
-        width: 100%; 
-        overflow-x: auto; 
-        margin: 0; 
-        -webkit-overflow-scrolling: touch; /* smooth momentum scrolling on mobile */
-    }
-
-    table { 
-        width: 100%; 
-        min-width: 500px; /* Forces table to be wider than screen on mobile */
-    }
-
-    /* Force the cards to match the container width */
-    .card {
-        width: 100%;
-        overflow: hidden; /* Prevents contents from pushing the card width */
-    }
-
-    /* Better mobile typography for table */
-    @media (max-width: 600px) {
-        th, td { padding: 10px 6px; font-size: 0.8rem; }
-        .action-btn { width: 28px; height: 28px; font-size: 0.8rem; }
-    }
-</style>
         :root {
             --bg-color: #121212; --card-bg: #1e1e1e; --card-elevated: #2c2c2e;
             --text-primary: #ffffff; --text-secondary: #a1a1aa;
             --accent: #ff6b00; --accent-hover: #e65c00;
-            --danger: #ef4444; --success: #10b981; --border: #333333;
+            --danger: #ef4444; --border: #333333;
         }
 
-        [data-theme="light"] {
-            --bg-color: #f4f6f8; --card-bg: #ffffff; --card-elevated: #e2e8f0;
-            --text-primary: #0f172a; --text-secondary: #64748b;
-            --border: #cbd5e1;
+        /* HARD FIX FOR HORIZONTAL SCROLL */
+        html, body {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            overflow-x: hidden; /* This kills the horizontal scroll */
+            background-color: var(--bg-color);
         }
 
-        * { box-sizing: border-box; }
-
-        body {
-            font-family: 'Inter', sans-serif; background-color: var(--bg-color);
-            color: var(--text-primary); margin: 0; padding: 0;
-            -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; min-height: 100vh;
-            transition: background-color 0.3s, color 0.3s;
+        .container { 
+            width: 100%; max-width: 1100px; margin: 0 auto;
+            padding: 15px; box-sizing: border-box; 
         }
 
-        /* --- OVERLAYS (Auth & Settings) --- */
-        .auth-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-color); display: flex; flex-direction: column;
-            align-items: center; justify-content: center; z-index: 9999;
-            text-align: center; padding: 20px;
-        }
-        .auth-card {
-            background: var(--card-bg); padding: 30px 20px; border-radius: 20px;
-            border: 1px solid var(--border); max-width: 400px; width: 100%;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15); text-align: left;
-        }
-        .auth-card.center { text-align: center; }
-        .auth-card h1 { color: var(--accent); margin-bottom: 10px; font-size: 1.6rem; text-align: center; }
-        .auth-card p { color: var(--text-secondary); margin-bottom: 25px; line-height: 1.5; text-align: center; }
-        
-        .btn-google {
-            background-color: #ffffff; color: #333; border: 1px solid #ddd; padding: 12px 20px;
-            border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1rem;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            width: 100%; transition: 0.2s;
-        }
-        .btn-google:hover { background-color: #f1f5f9; }
-        .btn-google img { width: 20px; height: 20px; }
-        .hidden { display: none !important; }
-
-        /* --- MAIN APP --- */
-        .app-wrapper { padding: 15px; flex: 1; max-width: 1100px; margin: 0 auto; width: 100%; }
-        
-        header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border); 
-            flex-wrap: wrap; gap: 15px;
-        }
-        .header-title { display: flex; align-items: center; gap: 10px; }
-        .header-title h1 { margin: 0; font-size: 1.4rem; font-weight: 600; color: var(--accent); }
-        
-        .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .icon-btn {
-            background: var(--card-elevated); color: var(--text-primary); border: 1px solid var(--border);
-            border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: 1.1rem; transition: 0.2s;
-        }
-        .icon-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
-        .user-badge { background: var(--card-elevated); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; color: var(--accent); border: 1px solid var(--border); }
-
-        h2 { margin: 0 0 15px 0; font-size: 1.2rem; font-weight: 600; }
-        h3 { margin: 0 0 15px 0; font-size: 1rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
-        
-        .btn { background-color: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.95rem; transition: all 0.2s ease; width: 100%; display: block; text-align: center; }
-        .btn:hover { background-color: var(--accent-hover); transform: translateY(-1px); }
-        .btn-outline { background-color: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
-        .btn-outline:hover { background-color: var(--card-elevated); color: var(--text-primary); }
-
-        /* Unified Grid for Mobile Cards */
+        /* Grid fixes to ensure cards stay within bounds */
         .stats-grid { 
-            display: grid; 
-            grid-template-columns: repeat(2, 1fr); 
-            gap: 12px; 
-            margin-bottom: 20px; 
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;
         }
-        @media (min-width: 600px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
-        
-        .stat-card { 
-            background: var(--card-bg); padding: 15px; border-radius: 12px; 
-            border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05); height: 100%;
+
+        /* Force table to fit */
+        .table-container { 
+            width: 100%; overflow-x: auto; 
+            border: 1px solid var(--border); border-radius: 12px;
         }
-        .stat-card .label { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;}
-        .stat-card .value { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); word-break: break-word;}
-        @media (min-width: 600px) { .stat-card .value { font-size: 1.6rem; } }
-
-        .dashboard-mid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 20px; }
-        @media (min-width: 800px) { .dashboard-mid { grid-template-columns: 2fr 1fr; } }
-        .main-layout { display: grid; grid-template-columns: 1fr; gap: 15px; }
-        @media (min-width: 800px) { .main-layout { grid-template-columns: 350px 1fr; } }
-
-        .card { background: var(--card-bg); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        table { width: 100%; min-width: 500px; border-collapse: collapse; }
         
-        .maintenance-item { margin-bottom: 15px; }
-        .maintenance-header { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 5px; }
-        .progress-bg { background: var(--card-elevated); height: 8px; border-radius: 4px; overflow: hidden; }
-        .progress-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
-
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: var(--card-elevated); padding: 4px; border-radius: 10px; }
-        .tab { flex: 1; text-align: center; cursor: pointer; padding: 10px; border-radius: 8px; font-weight: 600; color: var(--text-secondary); transition: 0.3s; font-size: 0.9rem;}
-        .tab.active { background: var(--accent); color: white; box-shadow: 0 2px 5px rgba(255, 107, 0, 0.3); }
-
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-secondary); font-weight: 500;}
-        .form-group input:not([type="checkbox"]), .form-group select, .form-group textarea { 
-            width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border); 
-            color: var(--text-primary); font-size: 1rem; padding: 8px 0; outline: none; font-family: inherit;
-        }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-bottom: 2px solid var(--accent); padding-bottom: 7px;}
-        
-        .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 10px; background: var(--card-elevated); padding: 12px; border-radius: 8px; border: 1px solid var(--border);}
-        .checkbox-group label { margin: 0; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.95rem; }
-        .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer;}
-        
-        ::-webkit-calendar-picker-indicator { filter: var(--calendar-filter, invert(1)); opacity: 0.6; cursor: pointer; }
-        [data-theme="light"] { --calendar-filter: invert(0); }
-
-        .table-container { overflow-x: auto; max-height: 500px; margin: 0 -10px; padding: 0 10px;}
-        table { width: 100%; border-collapse: collapse; text-align: left; min-width: 600px;}
-        th, td { padding: 14px 10px; border-bottom: 1px solid var(--border); font-size: 0.9rem; vertical-align: middle;}
-        th { color: var(--text-secondary); position: sticky; top: 0; background: var(--card-bg); font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; z-index: 10;}
-        .badge { font-size: 0.7rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px;}
-        .badge.fuel { background: rgba(255, 107, 0, 0.15); color: var(--accent); }
-        .badge.service { background: rgba(16, 185, 129, 0.15); color: var(--success); }
-
-        .action-cell { display: flex; gap: 8px; justify-content: flex-end; }
-        .action-btn { 
-            background: var(--card-elevated); border: 1px solid var(--border); color: var(--text-primary);
-            border-radius: 6px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: 0.9rem; transition: 0.2s;
-        }
-        .action-btn:hover { background: var(--accent); border-color: var(--accent); color: white;}
-        .action-btn.delete:hover { background: var(--danger); border-color: var(--danger); color: white;}
-
-        footer { text-align: center; margin-top: 30px; padding: 20px 0; color: var(--text-secondary); font-size: 0.8rem; border-top: 1px solid var(--border); width: 100%; }
+        /* ... rest of your existing CSS is fine, just keep these layout fixes ... */
+        .card { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -357,6 +217,19 @@
 </div>
 
 <script>
+    // --- UPDATED AUTH PERSISTENCE ---
+    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+    .then(() => {
+        // App now remembers login across sessions
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                checkRegistrationAndLoadApp();
+            } else {
+                showPage('landingPage');
+            }
+        });
+    });
     // ==========================================
     // FIREBASE CONFIGURATION
     // ==========================================
