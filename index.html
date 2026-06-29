@@ -33,11 +33,12 @@
 
         * { box-sizing: border-box; }
 
+        html, body { overflow-x: hidden; }
         body {
             font-family: 'Inter', sans-serif; background-color: var(--bg-color);
             color: var(--text-primary); margin: 0; padding: 0;
             -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; min-height: 100vh;
-            transition: background-color 0.3s, color 0.3s;
+            transition: background-color 0.3s, color 0.3s; width: 100%;
         }
 
         /* --- OVERLAYS (Auth & Settings) --- */
@@ -67,7 +68,7 @@
         .hidden { display: none !important; }
 
         /* --- MAIN APP --- */
-        .app-wrapper { padding: 15px; flex: 1; max-width: 1100px; margin: 0 auto; width: 100%; }
+        .app-wrapper { padding: 15px; flex: 1; max-width: 1100px; margin: 0 auto; width: 100%; min-width: 0; }
         
         header { 
             display: flex; justify-content: space-between; align-items: center; 
@@ -112,12 +113,12 @@
         .stat-card .value { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); word-break: break-word;}
         @media (min-width: 600px) { .stat-card .value { font-size: 1.6rem; } }
 
-        .dashboard-mid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 20px; }
+        .dashboard-mid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 20px; min-width: 0; }
         @media (min-width: 800px) { .dashboard-mid { grid-template-columns: 2fr 1fr; } }
-        .main-layout { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        .main-layout { display: grid; grid-template-columns: 1fr; gap: 15px; min-width: 0; }
         @media (min-width: 800px) { .main-layout { grid-template-columns: 350px 1fr; } }
 
-        .card { background: var(--card-bg); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .card { background: var(--card-bg); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.05); min-width: 0; }
         
         .maintenance-item { margin-bottom: 15px; }
         .maintenance-header { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 5px; }
