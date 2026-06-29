@@ -17,7 +17,34 @@
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+<style>
+    /* ... keep previous styles ... */
 
+    /* Fix table scrolling */
+    .table-container { 
+        width: 100%; 
+        overflow-x: auto; 
+        margin: 0; 
+        -webkit-overflow-scrolling: touch; /* smooth momentum scrolling on mobile */
+    }
+
+    table { 
+        width: 100%; 
+        min-width: 500px; /* Forces table to be wider than screen on mobile */
+    }
+
+    /* Force the cards to match the container width */
+    .card {
+        width: 100%;
+        overflow: hidden; /* Prevents contents from pushing the card width */
+    }
+
+    /* Better mobile typography for table */
+    @media (max-width: 600px) {
+        th, td { padding: 10px 6px; font-size: 0.8rem; }
+        .action-btn { width: 28px; height: 28px; font-size: 0.8rem; }
+    }
+</style>
         :root {
             --bg-color: #121212; --card-bg: #1e1e1e; --card-elevated: #2c2c2e;
             --text-primary: #ffffff; --text-secondary: #a1a1aa;
