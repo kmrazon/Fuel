@@ -15,224 +15,75 @@
     
     <style>
         :root {
-            --bg-color: #121212; --card-bg: #1e1e1e; --card-elevated: #2c2c2e;
-            --text-primary: #ffffff; --text-secondary: #a1a1aa;
-            --accent: #ff6b00; --accent-hover: #e65c00;
-            --danger: #ef4444; --border: #333333;
+            --bg-color: #121212; --card-bg: #1e1e1e; --accent: #ff6b00;
+            --text-primary: #ffffff; --text-secondary: #a1a1aa; --border: #333333;
         }
 
-        /* HARD FIX FOR HORIZONTAL SCROLL */
+        /* --- THE HORIZONTAL SCROLL KILLER --- */
         html, body {
             margin: 0; padding: 0;
             width: 100%; height: 100%;
-            overflow-x: hidden; /* This kills the horizontal scroll */
+            overflow-x: hidden;
             background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
         }
 
-        .container { 
-            width: 100%; max-width: 1100px; margin: 0 auto;
-            padding: 15px; box-sizing: border-box; 
-        }
+        .container { width: 100vw; padding: 15px; box-sizing: border-box; }
+        .card { background: var(--card-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 15px; }
 
-        /* Grid fixes to ensure cards stay within bounds */
-        .stats-grid { 
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;
-        }
+        /* --- DASHBOARD LAYOUT --- */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .stat-card { background: var(--card-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--border); }
+        .stat-card .label { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; }
+        .stat-card .value { font-size: 1.2rem; font-weight: 700; margin-top: 5px; }
 
-        /* Force table to fit */
+        /* --- TABLE SCROLL FIX --- */
         .table-container { 
             width: 100%; overflow-x: auto; 
-            border: 1px solid var(--border); border-radius: 12px;
+            border: 1px solid var(--border); border-radius: 8px;
         }
-        table { width: 100%; min-width: 500px; border-collapse: collapse; }
-        
-        /* ... rest of your existing CSS is fine, just keep these layout fixes ... */
-        .card { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+        table { width: 100%; min-width: 500px; border-collapse: collapse; font-size: 0.85rem; }
+        th, td { padding: 12px; border-bottom: 1px solid var(--border); text-align: left; }
+
+        .btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: 600; }
+        .action-btn { background: none; border: none; cursor: pointer; font-size: 1.1rem; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div id="landingPage" class="auth-overlay">
-    <div class="auth-card center">
-        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 15px;">
-            <path d="M3 22v-8a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8"></path><path d="M11 22H3"></path><path d="M14 9V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v5"></path>
-            <path d="M14 9h6"></path><path d="M17 9v11a2 2 0 0 1-2 2h-2"></path>
-        </svg>
+<div id="landingPage" class="container">
+    <div class="card">
         <h1>Vehicle Expenditure</h1>
-        <p>Please login or register to continue managing your fuel and maintenance logs safely.</p>
-        <button class="btn-google" onclick="signInWithGoogle()">
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google Logo">
-            Continue with Google
-        </button>
+        <button class="btn" onclick="signInWithGoogle()">Login with Google</button>
     </div>
 </div>
 
-<div id="registrationPage" class="auth-overlay hidden">
-    <div class="auth-card">
-        <h1 style="text-align: left;">Almost done!</h1>
-        <p style="text-align: left;">What motorcycle will you be tracking?</p>
-        <div class="form-group">
-            <label>Bike Model</label>
-            <input type="text" id="regBikeModel" placeholder="e.g. Pulsar N160, Hornet 2.0">
-        </div>
-        <button id="regBtn" class="btn" onclick="completeRegistration()">Start Tracking</button>
-    </div>
-</div>
-
-<div id="settingsPage" class="auth-overlay hidden">
-    <div class="auth-card">
-        <h2>App Settings</h2>
-        <div class="form-group">
-            <label>Currency</label>
-            <select id="setCurrency">
-                <option value="৳">৳ (BDT)</option>
-                <option value="₹">₹ (INR)</option>
-                <option value="$">$ (USD)</option>
-                <option value="£">£ (GBP)</option>
-                <option value="€">€ (EUR)</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>Distance Unit</label>
-            <select id="setDistance">
-                <option value="km">Kilometers (km)</option>
-                <option value="mi">Miles (mi)</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>Volume Unit</label>
-            <select id="setVolume">
-                <option value="L">Liters (L)</option>
-                <option value="gal">Gallons (gal)</option>
-            </select>
-        </div>
-        <div style="display: flex; gap: 10px; margin-top: 25px;">
-            <button class="btn btn-outline" onclick="closeSettings()">Cancel</button>
-            <button class="btn" onclick="saveSettings()">Save</button>
-        </div>
-    </div>
-</div>
-
-<div id="mainApp" class="app-wrapper hidden">
-    <header>
-        <div class="header-title">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 22v-8a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8"></path><path d="M11 22H3"></path><path d="M14 9V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v5"></path><path d="M14 9h6"></path><path d="M17 9v11a2 2 0 0 1-2 2h-2"></path>
-            </svg>
-            <h1>PitStop</h1>
-        </div>
-        <div class="header-actions">
-            <div class="user-badge" id="displayBikeModel">Loading...</div>
-            <button class="icon-btn" onclick="toggleTheme()" title="Toggle Light/Dark Mode">🌓</button>
-            <button class="icon-btn" onclick="openSettings()" title="Settings">⚙️</button>
-            <button class="icon-btn" onclick="document.getElementById('csvFile').click()" title="Import CSV">📥</button>
-            <button class="icon-btn" onclick="signOut()" title="Logout">🚪</button>
-            <input type="file" id="csvFile" accept=".csv" style="display:none;" onchange="handleCSVImport(event)">
-        </div>
+<div id="mainApp" class="container hidden">
+    <header style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1 style="font-size: 1.4rem;">Dashboard</h1>
+        <button class="btn" style="width: auto; padding: 8px 12px;" onclick="signOut()">Logout</button>
     </header>
 
     <div class="stats-grid">
-        <div class="stat-card">
-            <div class="label">Total Distance</div>
-            <div class="value" id="stat-distance">0</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Avg Economy</div>
-            <div class="value" id="stat-mileage" style="color: var(--accent);">0</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Total Spend</div>
-            <div class="value" id="stat-total-cost">0</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">This Month</div>
-            <div class="value" id="stat-monthly-cost">0</div>
-        </div>
+        <div class="stat-card"><div class="label">Total Dist</div><div class="value" id="stat-distance">0</div></div>
+        <div class="stat-card"><div class="label">Economy</div><div class="value" id="stat-mileage">0</div></div>
+        <div class="stat-card"><div class="label">Total Spend</div><div class="value" id="stat-total-cost">0</div></div>
+        <div class="stat-card"><div class="label">This Month</div><div class="value" id="stat-monthly-cost">0</div></div>
     </div>
 
-    <div class="dashboard-mid">
-        <div class="card">
-            <h3 id="chartTitle">Fuel Economy Trend</h3>
-            <div style="height: 180px; width: 100%;"><canvas id="economyChart"></canvas></div>
-        </div>
-        <div class="card">
-            <h3>Maintenance Status</h3>
-            <div id="maintenance-alerts"></div>
+    <div class="card">
+        <div class="table-container">
+            <table>
+                <thead><tr><th>Date</th><th>Type</th><th>Odo</th><th>Cost</th><th>Actions</th></tr></thead>
+                <tbody id="logTableBody"></tbody>
+            </table>
         </div>
     </div>
-
-    <div class="main-layout">
-        <div class="card">
-            <h2 id="formTitle">New Entry</h2>
-            <div class="tabs">
-                <div class="tab active" id="tab-fuel" onclick="switchType('fuel')">Fueling</div>
-                <div class="tab" id="tab-service" onclick="switchType('service')">Service</div>
-            </div>
-            <form id="logForm" onsubmit="saveEntry(event)">
-                <input type="hidden" id="entryType" value="fuel">
-                <input type="hidden" id="editId" value="">
-                
-                <div class="form-group"><label>Date</label><input type="date" id="date" required></div>
-                <div class="form-group"><label id="lblOdo">Current odometer</label><input type="number" id="odo" step="any" required></div>
-                <div class="form-group"><label id="lblCost">Total Cost</label><input type="number" id="totalCost" step="any" required oninput="calculateUnitCost()"></div>
-                
-                <div id="fuelFields">
-                    <div class="form-group"><label id="lblVol">Fuel volume</label><input type="number" id="volume" step="any" oninput="calculateUnitCost()"></div>
-                    <div class="form-group"><label id="lblUnit">Unit price</label><input type="number" id="unitPrice" step="any" readonly style="color: var(--text-secondary);"></div>
-                    <div class="checkbox-group">
-                        <label><input type="checkbox" id="isFullTank" checked> This was a Full Tank</label>
-                    </div>
-                </div>
-                
-                <div class="form-group" style="margin-top: 15px;"><label id="notesLabel">Fuel station name</label><textarea id="notes" rows="1" placeholder="..."></textarea></div>
-                
-                <button type="submit" id="saveBtn" class="btn">SAVE ENTRY</button>
-                <button type="button" id="cancelEditBtn" class="btn btn-outline hidden" style="margin-top: 10px;" onclick="cancelEdit()">CANCEL EDIT</button>
-            </form>
-        </div>
-
-        <div class="card">
-            <h2>Log History</h2>
-            <div class="table-container">
-                <table id="logTable">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Type</th>
-                            <th id="thOdo">Odo</th>
-                            <th id="thCost">Cost</th>
-                            <th id="thVol">Vol</th>
-                            <th id="thEco">Eco</th>
-                            <th>Notes</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="logTableBody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <footer>This web app is developed by Kanon Al Mozadid. Copyright reserved.</footer>
 </div>
 
 <script>
-    // --- UPDATED AUTH PERSISTENCE ---
-    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-    .then(() => {
-        // App now remembers login across sessions
-        firebase.auth().onAuthStateChanged((user) => {
-            if (user) {
-                currentUser = user;
-                checkRegistrationAndLoadApp();
-            } else {
-                showPage('landingPage');
-            }
-        });
-    });
-    // ==========================================
-    // FIREBASE CONFIGURATION
-    // ==========================================
     const firebaseConfig = {
         apiKey: "AIzaSyDZznwqirEhn7kk40ouixwB0hrmGCZGJ0A",
         authDomain: "vehicle-expenditure-85493.firebaseapp.com",
@@ -246,370 +97,43 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // --- STATE VARIABLES ---
-    let currentUser = null;
-    let dbData = [];
-    let myChart = null;
-    let unsubscribe = null; 
-    let userPrefs = { currency: '৳', distance: 'km', volume: 'L' };
-    
-    document.getElementById('date').valueAsDate = new Date();
+    // FORCE SESSION PERSISTENCE
+    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
-    // --- THEME LOGIC ---
-    function toggleTheme() {
-        const currentTheme = document.documentElement.getAttribute('data-theme');
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('pitstop_theme', newTheme);
-        document.getElementById('themeColorMeta').setAttribute('content', newTheme === 'light' ? '#f4f6f8' : '#121212');
-        if(myChart) {
-            myChart.options.scales.x.grid.color = newTheme === 'light' ? '#e2e8f0' : '#333333';
-            myChart.options.scales.y.grid.color = newTheme === 'light' ? '#e2e8f0' : '#333333';
-            myChart.update();
-        }
-    }
-    const savedTheme = localStorage.getItem('pitstop_theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    document.getElementById('themeColorMeta').setAttribute('content', savedTheme === 'light' ? '#f4f6f8' : '#121212');
-
-    // --- AUTHENTICATION LOGIC ---
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
             currentUser = user;
-            checkRegistrationAndLoadApp();
+            document.getElementById('landingPage').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            loadLogs();
         } else {
-            currentUser = null;
-            if(unsubscribe) unsubscribe(); 
-            showPage('landingPage');
+            document.getElementById('landingPage').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
         }
     });
 
-    function signInWithGoogle() {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        firebase.auth().signInWithPopup(provider).catch((error) => alert(error.message));
-    }
+    function signInWithGoogle() { firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
     function signOut() { firebase.auth().signOut(); }
 
-    function checkRegistrationAndLoadApp() {
-        db.collection('users').doc(currentUser.uid).get().then(doc => {
-            if (doc.exists && doc.data().bikeModel) {
-                document.getElementById('displayBikeModel').innerText = doc.data().bikeModel;
-                if(doc.data().settings) userPrefs = doc.data().settings;
-                updateLabelsWithPrefs();
-                showPage('mainApp');
-                initApp();
-            } else {
-                showPage('registrationPage');
-            }
-        }).catch(err => {
-            console.error("Error fetching user data", err);
-            alert("Error connecting to database.");
-        });
-    }
-
-    function completeRegistration() {
-        const model = document.getElementById('regBikeModel').value.trim();
-        if(model === "") { alert("Please enter a bike model."); return; }
-        document.getElementById('regBtn').innerText = "Saving to Cloud...";
-        
-        db.collection('users').doc(currentUser.uid).set({ bikeModel: model, settings: userPrefs }, { merge: true })
-        .then(() => {
-            document.getElementById('displayBikeModel').innerText = model;
-            document.getElementById('regBtn').innerText = "Start Tracking";
-            updateLabelsWithPrefs();
-            showPage('mainApp');
-            initApp();
-        }).catch(err => {
-            alert("Error saving: " + err.message);
-            document.getElementById('regBtn').innerText = "Start Tracking";
-        });
-    }
-
-    // --- SETTINGS LOGIC ---
-    function openSettings() {
-        document.getElementById('setCurrency').value = userPrefs.currency;
-        document.getElementById('setDistance').value = userPrefs.distance;
-        document.getElementById('setVolume').value = userPrefs.volume;
-        showPage('settingsPage');
-    }
-    function closeSettings() { showPage('mainApp'); }
-    
-    function saveSettings() {
-        userPrefs = {
-            currency: document.getElementById('setCurrency').value,
-            distance: document.getElementById('setDistance').value,
-            volume: document.getElementById('setVolume').value
-        };
-        db.collection('users').doc(currentUser.uid).set({ settings: userPrefs }, { merge: true })
-        .then(() => {
-            updateLabelsWithPrefs();
-            processAndRender();
-            closeSettings();
-        }).catch(err => alert("Error saving settings: " + err.message));
-    }
-
-    function updateLabelsWithPrefs() {
-        document.getElementById('lblOdo').innerText = `Current odometer (${userPrefs.distance})`;
-        document.getElementById('lblCost').innerText = `Total Cost (${userPrefs.currency})`;
-        document.getElementById('lblVol').innerText = `Fuel volume (${userPrefs.volume})`;
-        document.getElementById('lblUnit').innerText = `Unit price (${userPrefs.currency}/${userPrefs.volume})`;
-        document.getElementById('thOdo').innerText = `Odo (${userPrefs.distance})`;
-        document.getElementById('thCost').innerText = `Cost (${userPrefs.currency})`;
-        document.getElementById('thVol').innerText = `Vol (${userPrefs.volume})`;
-        document.getElementById('thEco').innerText = `Eco (${userPrefs.distance}/${userPrefs.volume})`;
-        document.getElementById('chartTitle').innerText = `Fuel Economy Trend (${userPrefs.distance}/${userPrefs.volume})`;
-    }
-
-    function showPage(pageId) {
-        document.querySelectorAll('.auth-overlay, .app-wrapper').forEach(el => el.classList.add('hidden'));
-        document.getElementById(pageId).classList.remove('hidden');
-    }
-
-    // --- CORE APP LOGIC ---
-    function switchType(type) {
-        document.getElementById('entryType').value = type;
-        document.getElementById('tab-fuel').classList.toggle('active', type === 'fuel');
-        document.getElementById('tab-service').classList.toggle('active', type === 'service');
-        const fuelFields = document.getElementById('fuelFields');
-        if(type === 'fuel') {
-            fuelFields.style.display = 'block'; 
-            document.getElementById('volume').required = true;
-            document.getElementById('notesLabel').innerText = "Fuel station name";
-            document.getElementById('notes').placeholder = "e.g. Trust Filling Station";
-        } else {
-            fuelFields.style.display = 'none'; 
-            document.getElementById('volume').required = false;
-            document.getElementById('notesLabel').innerText = "Service / Parts details";
-            document.getElementById('notes').placeholder = "e.g. Engine Oil Change, Brake Pads...";
-        }
-    }
-
-    function calculateUnitCost() {
-        const totalCost = parseFloat(document.getElementById('totalCost').value);
-        const volume = parseFloat(document.getElementById('volume').value);
-        if(totalCost && volume && document.getElementById('entryType').value === 'fuel') {
-            document.getElementById('unitPrice').value = (totalCost / volume).toFixed(2);
-        }
-    }
-
-    function initApp() {
-        if(!myChart) {
-            const ctx = document.getElementById('economyChart').getContext('2d');
-            myChart = new Chart(ctx, {
-                type: 'line',
-                data: { labels: [], datasets: [{ label: 'Economy', data: [], borderColor: '#ff6b00', backgroundColor: 'rgba(255, 107, 0, 0.1)', borderWidth: 2, pointBackgroundColor: '#1e1e1e', pointBorderColor: '#ff6b00', fill: true, tension: 0.3 }]},
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: savedTheme === 'light' ? '#e2e8f0' : '#333333' }, ticks: { color: '#a1a1aa' } }, y: { grid: { color: savedTheme === 'light' ? '#e2e8f0' : '#333333' }, ticks: { color: '#a1a1aa' } } } }
+    function loadLogs() {
+        db.collection('users').doc(currentUser.uid).collection('logs')
+            .onSnapshot(snap => {
+                const tbody = document.getElementById('logTableBody');
+                tbody.innerHTML = '';
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    tbody.innerHTML += `<tr>
+                        <td>${data.date}</td>
+                        <td>${data.type}</td>
+                        <td>${data.odo}</td>
+                        <td>${data.totalCost}</td>
+                        <td>
+                            <button class="action-btn" onclick="alert('Add edit logic here')">✏️</button>
+                            <button class="action-btn" onclick="db.collection('users').doc(currentUser.uid).collection('logs').doc('${doc.id}').delete()">🗑️</button>
+                        </td>
+                    </tr>`;
+                });
             });
-        }
-
-        if (unsubscribe) unsubscribe();
-        unsubscribe = db.collection('users').doc(currentUser.uid).collection('logs')
-            .onSnapshot(snapshot => {
-                dbData = [];
-                snapshot.forEach(doc => { dbData.push(doc.data()); });
-                processAndRender();
-            }, error => { console.error("Error listening to logs:", error); });
-    }
-
-    // --- EDIT & DELETE LOGIC ---
-    function deleteEntry(id) {
-        if(confirm("Are you sure you want to completely delete this entry?")) {
-            db.collection('users').doc(currentUser.uid).collection('logs').doc(id.toString()).delete()
-            .catch(err => alert("Error deleting: " + err.message));
-        }
-    }
-
-    function editEntry(id) {
-        const entry = dbData.find(d => d.id === id);
-        if(!entry) return;
-        
-        document.getElementById('formTitle').innerText = "Edit Entry";
-        document.getElementById('editId').value = entry.id;
-        
-        switchType(entry.type);
-        
-        document.getElementById('date').value = entry.date;
-        document.getElementById('odo').value = entry.odo;
-        document.getElementById('totalCost').value = entry.totalCost;
-        
-        if(entry.type === 'fuel') {
-            document.getElementById('volume').value = entry.volume || '';
-            document.getElementById('unitPrice').value = entry.unitPrice || '';
-            document.getElementById('isFullTank').checked = entry.isFullTank !== false; // handle old data as true
-        }
-        
-        document.getElementById('notes').value = entry.notes || '';
-        document.getElementById('saveBtn').innerText = "UPDATE ENTRY";
-        document.getElementById('cancelEditBtn').classList.remove('hidden');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-    
-    function cancelEdit() {
-        document.getElementById('formTitle').innerText = "New Entry";
-        document.getElementById('editId').value = "";
-        document.getElementById('logForm').reset();
-        document.getElementById('isFullTank').checked = true;
-        document.getElementById('date').valueAsDate = new Date();
-        document.getElementById('saveBtn').innerText = "SAVE ENTRY";
-        document.getElementById('cancelEditBtn').classList.add('hidden');
-    }
-
-    function saveEntry(e) {
-        e.preventDefault();
-        const saveBtn = document.getElementById('saveBtn');
-        const editId = document.getElementById('editId').value;
-        const entryId = editId ? parseInt(editId) : Date.now();
-        
-        saveBtn.innerText = "SAVING...";
-        
-        const isFuel = document.getElementById('entryType').value === 'fuel';
-        const entry = {
-            id: entryId,
-            type: document.getElementById('entryType').value,
-            odo: parseFloat(document.getElementById('odo').value),
-            date: document.getElementById('date').value,
-            totalCost: parseFloat(document.getElementById('totalCost').value),
-            volume: isFuel ? parseFloat(document.getElementById('volume').value) : null,
-            unitPrice: isFuel ? parseFloat(document.getElementById('unitPrice').value) : null,
-            isFullTank: isFuel ? document.getElementById('isFullTank').checked : null,
-            notes: document.getElementById('notes').value
-        };
-
-        db.collection('users').doc(currentUser.uid).collection('logs').doc(entryId.toString()).set(entry)
-        .then(() => {
-            saveBtn.innerText = editId ? "UPDATED!" : "SAVED!";
-            setTimeout(() => { cancelEdit(); }, 1200);
-        })
-        .catch(error => {
-            alert("Error saving: " + error.message);
-            saveBtn.innerText = editId ? "UPDATE ENTRY" : "SAVE ENTRY";
-        });
-    }
-
-    function processAndRender() {
-        const sortedData = [...dbData].sort((a,b) => new Date(a.date) - new Date(b.date));
-        let totalSpend = 0, monthlySpend = 0;
-        const currentMonth = new Date().toISOString().substring(0, 7); 
-        let lowestOdo = sortedData.length > 0 ? sortedData[0].odo : 0;
-        let highestOdo = sortedData.length > 0 ? sortedData[sortedData.length - 1].odo : 0;
-        let totalDistance = highestOdo > lowestOdo ? highestOdo - lowestOdo : 0;
-        let chartDates = [], chartData = [], lastServiceOdo = lowestOdo;
-
-        for(let i = 0; i < sortedData.length; i++) {
-            totalSpend += sortedData[i].totalCost;
-            if(sortedData[i].date.substring(0,7) === currentMonth) monthlySpend += sortedData[i].totalCost;
-            if(sortedData[i].type === 'service') lastServiceOdo = Math.max(lastServiceOdo, sortedData[i].odo);
-            
-            // Economy calculation - Only calculate if CURRENT fill is Full Tank
-            let isCurrentFull = sortedData[i].isFullTank !== false;
-            if(sortedData[i].type === 'fuel' && i > 0 && isCurrentFull) {
-                // Find previous entry to calculate distance
-                let prevEntry = [...sortedData].slice(0, i).reverse().find(d => d.odo);
-                if(prevEntry && sortedData[i].volume) {
-                    let diff = sortedData[i].odo - prevEntry.odo;
-                    let kml = diff / sortedData[i].volume;
-                    sortedData[i].calculatedMileage = kml;
-                    if(kml > 10 && kml < 80) { chartDates.push(sortedData[i].date.substring(5)); chartData.push(kml.toFixed(1)); }
-                }
-            }
-        }
-
-        if(myChart) { myChart.data.labels = chartDates.slice(-15); myChart.data.datasets[0].data = chartData.slice(-15); myChart.update(); }
-
-        let fuelLogs = sortedData.filter(d => d.type === 'fuel' && d.calculatedMileage);
-        let avgMileage = fuelLogs.length ? fuelLogs.reduce((s, i) => s + i.calculatedMileage, 0) / fuelLogs.length : 0;
-
-        document.getElementById('stat-distance').innerText = `${totalDistance.toLocaleString()} ${userPrefs.distance}`;
-        document.getElementById('stat-mileage').innerText = `${avgMileage.toFixed(1)} ${userPrefs.distance}/${userPrefs.volume}`;
-        document.getElementById('stat-total-cost').innerText = `${userPrefs.currency}${totalSpend.toLocaleString(undefined, {minimumFractionDigits: 0})}`;
-        document.getElementById('stat-monthly-cost').innerText = `${userPrefs.currency}${monthlySpend.toLocaleString(undefined, {minimumFractionDigits: 0})}`;
-
-        renderMaintenanceStatus(highestOdo, lastServiceOdo);
-
-        const tbody = document.getElementById('logTableBody'); tbody.innerHTML = '';
-        [...sortedData].reverse().forEach(item => {
-            const tr = document.createElement('tr');
-            let isFull = item.type === 'fuel' ? (item.isFullTank !== false ? '✅' : '⚠️ Partial') : '-';
-            let volDisplay = item.volume ? `${item.volume}${userPrefs.volume} <br><small style="color:var(--text-secondary)">${isFull}</small>` : '-';
-            
-            tr.innerHTML = `
-                <td style="white-space: nowrap;">${item.date}</td>
-                <td><span class="badge ${item.type}">${item.type}</span></td>
-                <td>${item.odo.toLocaleString()}</td>
-                <td>${userPrefs.currency}${item.totalCost.toFixed(0)}</td>
-                <td>${volDisplay}</td>
-                <td style="color:var(--accent); font-weight:600;">${item.calculatedMileage ? item.calculatedMileage.toFixed(1) : '-'}</td>
-                <td style="color:var(--text-secondary); min-width: 120px; font-size: 0.8rem;">${item.notes || ''}</td>
-                <td>
-                    <div class="action-cell">
-                        <button class="action-btn" title="Edit" onclick="editEntry(${item.id})">✏️</button>
-                        <button class="action-btn delete" title="Delete" onclick="deleteEntry(${item.id})">🗑️</button>
-                    </div>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
-
-    function renderMaintenanceStatus(currentOdo, lastServiceOdo) {
-        const container = document.getElementById('maintenance-alerts');
-        const kmSinceService = currentOdo - lastServiceOdo;
-        const tasks = [ { name: "Chain Lube & Clean", interval: 500, color: "#3b82f6" }, { name: "Engine Oil Change", interval: 2000, color: "#ff6b00" } ];
-        let html = '';
-        tasks.forEach(task => {
-            // Adjust interval purely visually if they chose Miles
-            let interval = userPrefs.distance === 'mi' ? Math.round(task.interval * 0.621371) : task.interval;
-            let percentage = Math.min((kmSinceService / interval) * 100, 100);
-            let remaining = interval - kmSinceService;
-            let statusText = remaining > 0 ? `${remaining} ${userPrefs.distance} left` : `DUE NOW`;
-            let barColor = percentage > 90 ? 'var(--danger)' : task.color;
-            html += `<div class="maintenance-item"><div class="maintenance-header"><span style="color: var(--text-primary); font-weight:500;">${task.name}</span><span style="color: ${percentage > 90 ? 'var(--danger)' : 'var(--text-secondary)'}; font-weight: 600; font-size:0.8rem;">${statusText}</span></div><div class="progress-bg"><div class="progress-fill" style="width: ${percentage}%; background: ${barColor};"></div></div></div>`;
-        });
-        container.innerHTML = html || '<p>No data yet</p>';
-    }
-
-    function handleCSVImport(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const lines = e.target.result.split('\n');
-            let importCount = 0;
-            let batch = db.batch();
-            
-            for(let i = 1; i < lines.length; i++) {
-                if(!lines[i].trim()) continue;
-                const cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                if(cols.length >= 4) {
-                    let type = cols[0].replace(/"/g, '').trim().toLowerCase().includes('fuel') ? 'fuel' : 'service';
-                    let dateObj = new Date(cols[2].replace(/"/g, '').trim());
-                    if(isNaN(dateObj.getTime())) dateObj = new Date(); 
-                    let formattedDate = dateObj.getFullYear() + '-' + String(dateObj.getMonth() + 1).padStart(2, '0') + '-' + String(dateObj.getDate()).padStart(2, '0');
-                    let odo = parseFloat(cols[1]), totalCost = parseFloat(cols[3]);
-                    if(isNaN(totalCost)) totalCost = parseFloat(cols[7]) || 0; 
-                    
-                    let entryId = Date.now() + i;
-                    let entry = {
-                        id: entryId, type: type, odo: isNaN(odo) ? 0 : odo, date: formattedDate,
-                        totalCost: isNaN(totalCost) ? 0 : totalCost,
-                        volume: isNaN(parseFloat(cols[4])) ? null : parseFloat(cols[4]),
-                        unitPrice: isNaN(parseFloat(cols[5])) ? null : parseFloat(cols[5]),
-                        isFullTank: true, // Old CSV imports assume full tank
-                        notes: cols[6] ? cols[6].replace(/"/g, '').trim() : ''
-                    };
-                    
-                    let docRef = db.collection('users').doc(currentUser.uid).collection('logs').doc(entryId.toString());
-                    batch.set(docRef, entry);
-                    importCount++;
-                }
-            }
-            if(importCount > 0) {
-                batch.commit().then(() => alert(`Imported ${importCount} entries to Cloud!`))
-                .catch(err => alert("Error importing: " + err.message));
-            }
-            event.target.value = '';
-        };
-        reader.readAsText(file);
     }
 </script>
 </body>
