@@ -122,14 +122,26 @@
         .user-badge { background: var(--card-elevated); padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); border: 0.5px solid var(--border); }
 
         /* Overlays */
-        .auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
-        .auth-card { background: var(--card-bg); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); padding: 32px 24px; border-radius: 24px; border: 0.5px solid var(--border); width: 100%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); text-align: left;}
+        .auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; padding: 20px; overflow-y: auto;}
+        .auth-card { background: var(--card-bg); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); padding: 32px 24px; border-radius: 24px; border: 0.5px solid var(--border); width: 100%; max-width: 420px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); text-align: left; margin: auto;}
         .auth-card.center { text-align: center; }
         .auth-card p { color: var(--text-secondary); line-height: 1.5; margin-bottom: 24px;}
         
-        .btn-google { background-color: #ffffff; color: #000000; border: none; padding: 14px 20px; border-radius: 14px; cursor: pointer; font-weight: 600; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; transition: transform 0.2s; }
+        .btn-google { background-color: #ffffff; color: #000000; border: none; padding: 14px 20px; border-radius: 14px; cursor: pointer; font-weight: 600; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; transition: transform 0.2s; margin-top: 10px;}
         .btn-google:active { transform: scale(0.97); }
         .btn-google img { width: 22px; height: 22px; }
+
+        /* Slideshow */
+        .slideshow-container { position: relative; width: 100%; border-radius: 16px; overflow: hidden; border: 0.5px solid var(--border); margin-bottom: 20px; background: var(--card-elevated); box-shadow: 0 4px 12px rgba(0,0,0,0.1);}
+        .slide { display: none; width: 100%; animation: fade 1s; }
+        .slide.active { display: block; }
+        .slide img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+        .dots-container { position: absolute; bottom: 12px; width: 100%; text-align: center; }
+        .dot { height: 8px; width: 8px; margin: 0 4px; background-color: rgba(255,255,255,0.4); border-radius: 50%; display: inline-block; transition: background-color 0.3s ease; }
+        .dot.active { background-color: var(--accent); }
+        [data-theme="light"] .dot { background-color: rgba(0,0,0,0.3); }
+        [data-theme="light"] .dot.active { background-color: var(--accent); }
+        @keyframes fade { from {opacity: .5} to {opacity: 1} }
 
         /* Tabs */
         .tabs { display: flex; background: var(--card-elevated); padding: 4px; border-radius: 12px; margin-bottom: 24px; }
@@ -178,8 +190,36 @@
 
 <div id="landingPage" class="auth-overlay hidden">
     <div class="auth-card center">
-        <h1>VEx</h1>
-        <p>Login to manage your vehicle expenditure safely in the cloud.</p>
+        <h1 style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 22v-8a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8"></path><path d="M11 22H3"></path><path d="M14 9V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v5"></path><path d="M14 9h6"></path><path d="M17 9v11a2 2 0 0 1-2 2h-2"></path>
+            </svg>
+            VEx
+        </h1>
+        
+        <!-- Image Slideshow -->
+        <div class="slideshow-container">
+            <div class="slide active">
+                <!-- Replace this src with your own Dashboard screenshot URL -->
+                <img src="https://placehold.co/600x450/2c2c2e/ffffff?text=Track+Fuel+Economy" alt="Track Economy">
+            </div>
+            <div class="slide">
+                <!-- Replace this src with your own Logs screenshot URL -->
+                <img src="https://placehold.co/600x450/2c2c2e/ffffff?text=Monitor+Maintenance" alt="Monitor Maintenance">
+            </div>
+            <div class="slide">
+                <!-- Replace this src with your own Settings screenshot URL -->
+                <img src="https://placehold.co/600x450/2c2c2e/ffffff?text=Cloud+Sync+&+Exports" alt="Cloud Sync">
+            </div>
+            <div class="dots-container">
+                <span class="dot active"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+            </div>
+        </div>
+
+        <p style="font-size: 0.95rem; font-weight: 500;">Continue with Google to experience more and unlock the full potential of your vehicle's data.</p>
+        
         <button class="btn-google" onclick="signInWithGoogle()">
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google Logo">
             Continue with Google
@@ -189,8 +229,8 @@
 
 <div id="registrationPage" class="auth-overlay hidden">
     <div class="auth-card">
-        <h1>Almost done!</h1>
-        <p>What motorcycle will you be tracking?</p>
+        <h1 style="text-align: left;">Almost done!</h1>
+        <p style="text-align: left;">What motorcycle will you be tracking?</p>
         <div class="form-group">
             <label>Bike Model</label>
             <input type="text" id="regBikeModel" placeholder="e.g. Pulsar N160">
@@ -363,6 +403,27 @@
     let unsubscribe = null; 
     let userPrefs = { currency: '৳', distance: 'km', volume: 'L' };
     
+    // SLIDESHOW LOGIC
+    let slideIndex = 0;
+    let slideTimer;
+
+    function showSlides() {
+        let slides = document.querySelectorAll(".slide");
+        let dots = document.querySelectorAll(".dot");
+        if(slides.length === 0) return;
+        
+        slides.forEach(s => s.classList.remove("active"));
+        dots.forEach(d => d.classList.remove("active"));
+        
+        slideIndex++;
+        if (slideIndex > slides.length) {slideIndex = 1}
+        
+        slides[slideIndex-1].classList.add("active");
+        dots[slideIndex-1].classList.add("active");
+        
+        slideTimer = setTimeout(showSlides, 3000); 
+    }
+
     document.getElementById('date').valueAsDate = new Date();
 
     function toggleTheme() {
@@ -385,11 +446,13 @@
         document.getElementById('loadingPage').classList.add('hidden');
         if (user) {
             currentUser = user;
+            clearTimeout(slideTimer); // Stop slideshow to save battery
             checkRegistrationAndLoadApp();
         } else {
             currentUser = null;
             if(unsubscribe) unsubscribe(); 
             showPage('landingPage');
+            showSlides(); // Start slideshow when landing page is visible
         }
     });
 
