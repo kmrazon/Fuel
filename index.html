@@ -3,203 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vehicle Expenditure</title>
-    
+    <title>Vehicle Expenditure (VEx)</title>
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#121212" id="themeColorMeta">
+    <meta name="theme-color" content="#000000" id="themeColorMeta">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏍️</text></svg>">
     
+    <!-- Firebase & Chart.js -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-        :root {
-            --bg-color: #121212; --card-bg: #1e1e1e; --card-elevated: #2c2c2e;
-            --text-primary: #ffffff; --text-secondary: #a1a1aa;
-            --accent: #ff6b00; --accent-hover: #e65c00;
-            --danger: #ef4444; --success: #10b981; --border: #333333;
+        :root { 
+            --bg-color: #000000; 
+            --card-bg: rgba(28, 28, 30, 0.7); 
+            --card-elevated: rgba(44, 44, 46, 0.8);
+            --text-primary: #ffffff; 
+            --text-secondary: #ebebf599; 
+            --accent: #0a84ff; 
+            --accent-hover: #007aff;
+            --danger: #ff453a; 
+            --success: #32d74b; 
+            --border: rgba(255, 255, 255, 0.15);
+            --blur: blur(20px);
         }
 
         [data-theme="light"] {
-            --bg-color: #f4f6f8; --card-bg: #ffffff; --card-elevated: #e2e8f0;
-            --text-primary: #0f172a; --text-secondary: #64748b;
-            --border: #cbd5e1;
+            --bg-color: #f2f2f7; 
+            --card-bg: rgba(255, 255, 255, 0.8); 
+            --card-elevated: rgba(255, 255, 255, 0.9);
+            --text-primary: #000000; 
+            --text-secondary: #3c3c4399;
+            --accent: #007aff;
+            --accent-hover: #0056b3;
+            --border: rgba(60, 60, 67, 0.15);
         }
 
         * { box-sizing: border-box; }
-
-        html, body { overflow-x: hidden; }
-        body {
-            font-family: 'Inter', sans-serif; background-color: var(--bg-color);
-            color: var(--text-primary); margin: 0; padding: 0;
-            -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; min-height: 100vh;
-            transition: background-color 0.3s, color 0.3s; width: 100%;
-        }
-
-        /* --- OVERLAYS (Auth & Settings) --- */
-        .auth-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-color); display: flex; flex-direction: column;
-            align-items: center; justify-content: center; z-index: 9999;
-            text-align: center; padding: 20px;
-        }
-        .auth-card {
-            background: var(--card-bg); padding: 30px 20px; border-radius: 20px;
-            border: 1px solid var(--border); max-width: 400px; width: 100%;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15); text-align: left;
-        }
-        .auth-card.center { text-align: center; }
-        .auth-card h1 { color: var(--accent); margin-bottom: 10px; font-size: 1.6rem; text-align: center; }
-        .auth-card p { color: var(--text-secondary); margin-bottom: 25px; line-height: 1.5; text-align: center; }
         
-        .btn-google {
-            background-color: #ffffff; color: #333; border: 1px solid #ddd; padding: 12px 20px;
-            border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1rem;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            width: 100%; transition: 0.2s;
-        }
-        .btn-google:hover { background-color: #f1f5f9; }
-        .btn-google img { width: 20px; height: 20px; }
-        .hidden { display: none !important; }
-        .spinner {
-            width: 36px; height: 36px; border: 3px solid var(--border);
-            border-top-color: var(--accent); border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* --- MAIN APP --- */
-        .app-wrapper { padding: 15px; flex: 1; max-width: 1100px; margin: 0 auto; width: 100%; min-width: 0; }
+        /* THE UNIVERSAL LAYOUT LOCK */
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow-x: hidden; background-color: var(--bg-color); color: var(--text-primary); font-family: '-apple-system', 'BlinkMacSystemFont', 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; }
         
-        header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border); 
-            flex-wrap: wrap; gap: 15px;
-        }
-        .header-title { display: flex; align-items: center; gap: 10px; }
-        .header-title h1 { margin: 0; font-size: 1.4rem; font-weight: 600; color: var(--accent); }
+        .app-wrapper { width: 100%; max-width: 800px; margin: 0 auto; padding: 20px 16px; box-sizing: border-box; min-width: 0; }
         
-        .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .icon-btn {
-            background: var(--card-elevated); color: var(--text-primary); border: 1px solid var(--border);
-            border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: 1.1rem; transition: 0.2s;
-        }
-        .icon-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
-        .user-badge { background: var(--card-elevated); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; color: var(--accent); border: 1px solid var(--border); }
-
-        .dropdown-wrapper { position: relative; }
-        .dropdown-menu {
-            position: absolute; top: calc(100% + 8px); right: 0; background: var(--card-bg);
-            border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-            min-width: 170px; z-index: 200; overflow: hidden;
-        }
-        .dropdown-item {
-            padding: 12px 16px; font-size: 0.85rem; font-weight: 500; cursor: pointer;
-            color: var(--text-primary); white-space: nowrap; transition: background 0.2s;
-        }
-        .dropdown-item:hover { background: var(--card-elevated); color: var(--accent); }
-        .dropdown-item + .dropdown-item { border-top: 1px solid var(--border); }
-
-        h2 { margin: 0 0 15px 0; font-size: 1.2rem; font-weight: 600; }
-        h3 { margin: 0 0 15px 0; font-size: 1rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
-        
-        .btn { background-color: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.95rem; transition: all 0.2s ease; width: 100%; display: block; text-align: center; }
-        .btn:hover { background-color: var(--accent-hover); transform: translateY(-1px); }
-        .btn-outline { background-color: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
-        .btn-outline:hover { background-color: var(--card-elevated); color: var(--text-primary); }
-
-        /* Unified Grid for Mobile Cards */
-        .stats-grid { 
-            display: grid; 
-            grid-template-columns: repeat(2, 1fr); 
-            gap: 12px; 
+        /* Modern iOS Cards */
+        .card { 
+            background: var(--card-bg); 
+            backdrop-filter: var(--blur); 
+            -webkit-backdrop-filter: var(--blur);
+            padding: 20px; 
+            border-radius: 20px; 
+            border: 0.5px solid var(--border); 
             margin-bottom: 20px; 
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08); 
+            min-width: 0;
         }
+        
+        /* Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
         @media (min-width: 600px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
         
         .stat-card { 
-            background: var(--card-bg); padding: 15px; border-radius: 12px; 
-            border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05); height: 100%;
+            background: var(--card-bg); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+            padding: 16px; border-radius: 20px; border: 0.5px solid var(--border); 
+            display: flex; flex-direction: column; justify-content: center;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.05); height: 100%;
         }
-        .stat-card .label { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;}
-        .stat-card .value { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); word-break: break-word;}
-        @media (min-width: 600px) { .stat-card .value { font-size: 1.6rem; } }
-
-        .dashboard-mid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 20px; min-width: 0; }
-        @media (min-width: 800px) { .dashboard-mid { grid-template-columns: 2fr 1fr; } }
-        .main-layout { display: grid; grid-template-columns: 1fr; gap: 15px; min-width: 0; }
-        @media (min-width: 800px) { .main-layout { grid-template-columns: 350px 1fr; } }
-
-        .card { background: var(--card-bg); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.05); min-width: 0; }
+        .stat-card .label { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;}
+        .stat-card .value { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); word-break: break-word;}
         
-        .maintenance-item { margin-bottom: 15px; }
-        .maintenance-header { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 5px; }
-        .progress-bg { background: var(--card-elevated); height: 8px; border-radius: 4px; overflow: hidden; }
-        .progress-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+        /* Table container */
+        .table-container { width: 100%; overflow-x: auto; border: 0.5px solid var(--border); border-radius: 14px; background: transparent;}
+        table { width: 100%; min-width: 600px; border-collapse: collapse; font-size: 0.9rem; }
+        th, td { padding: 14px 16px; border-bottom: 0.5px solid var(--border); text-align: left; vertical-align: middle; }
+        th { color: var(--text-secondary); position: sticky; top: 0; background: var(--card-bg); font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; z-index: 10; backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);}
+        
+        .badge { font-size: 0.7rem; font-weight: 700; padding: 4px 8px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.5px;}
+        .badge.fuel { background: rgba(10, 132, 255, 0.15); color: var(--accent); }
+        .badge.service { background: rgba(50, 215, 75, 0.15); color: var(--success); }
 
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: var(--card-elevated); padding: 4px; border-radius: 10px; }
-        .tab { flex: 1; text-align: center; cursor: pointer; padding: 10px; border-radius: 8px; font-weight: 600; color: var(--text-secondary); transition: 0.3s; font-size: 0.9rem;}
-        .tab.active { background: var(--accent); color: white; box-shadow: 0 2px 5px rgba(255, 107, 0, 0.3); }
+        .btn { background: var(--accent); color: white; border: none; padding: 14px 20px; border-radius: 14px; width: 100%; font-weight: 600; font-size: 1rem; cursor: pointer; transition: transform 0.2s, opacity 0.2s; text-align: center;}
+        .btn:active { transform: scale(0.97); opacity: 0.9; }
+        .btn-outline { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
 
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-secondary); font-weight: 500;}
-        .form-group input:not([type="checkbox"]), .form-group select, .form-group textarea { 
-            width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border); 
-            color: var(--text-primary); font-size: 1rem; padding: 8px 0; outline: none; font-family: inherit;
+        .hidden { display: none !important; }
+        
+        /* Forms */
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 0.85rem; margin-bottom: 8px; color: var(--text-secondary); font-weight: 500; margin-left: 4px;}
+        input, select, textarea { 
+            width: 100%; background: var(--card-elevated); border: 0.5px solid var(--border); 
+            color: var(--text-primary); padding: 14px 16px; border-radius: 14px; 
+            font-size: 1rem; font-family: inherit; box-sizing: border-box; appearance: none; outline: none; transition: border-color 0.2s;
         }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-bottom: 2px solid var(--accent); padding-bottom: 7px;}
-        
-        .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 10px; background: var(--card-elevated); padding: 12px; border-radius: 8px; border: 1px solid var(--border);}
-        .checkbox-group label { margin: 0; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.95rem; }
-        .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer;}
-        
-        ::-webkit-calendar-picker-indicator { filter: var(--calendar-filter, invert(1)); opacity: 0.6; cursor: pointer; }
+        input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+        ::-webkit-calendar-picker-indicator { filter: var(--calendar-filter, invert(1)); opacity: 0.5; }
         [data-theme="light"] { --calendar-filter: invert(0); }
 
-        .table-container { overflow-x: auto; max-height: 500px; margin: 0 -10px; padding: 0 10px;}
-        table { width: 100%; border-collapse: collapse; text-align: left; min-width: 600px;}
-        th, td { padding: 14px 10px; border-bottom: 1px solid var(--border); font-size: 0.9rem; vertical-align: middle;}
-        th { color: var(--text-secondary); position: sticky; top: 0; background: var(--card-bg); font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; z-index: 10;}
-        .badge { font-size: 0.7rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px;}
-        .badge.fuel { background: rgba(255, 107, 0, 0.15); color: var(--accent); }
-        .badge.service { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+        /* Typography & Headers */
+        h1, h2, h3 { margin: 0 0 16px 0; font-weight: 600; }
+        h1 { font-size: 1.8rem; letter-spacing: -0.5px; }
+        h2 { font-size: 1.4rem; letter-spacing: -0.3px; }
+        h3 { font-size: 1rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+        .header-title h1 { margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 8px;}
+        .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        
+        .icon-btn {
+            background: var(--card-elevated); color: var(--accent); border: 0.5px solid var(--border);
+            border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 1.2rem; transition: background 0.2s;
+        }
+        .icon-btn:hover { background: var(--border); }
+        .user-badge { background: var(--card-elevated); padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); border: 0.5px solid var(--border); }
+
+        /* Overlays */
+        .auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
+        .auth-card { background: var(--card-bg); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); padding: 32px 24px; border-radius: 24px; border: 0.5px solid var(--border); width: 100%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); text-align: left;}
+        .auth-card.center { text-align: center; }
+        .auth-card p { color: var(--text-secondary); line-height: 1.5; margin-bottom: 24px;}
+        
+        .btn-google { background-color: #ffffff; color: #000000; border: none; padding: 14px 20px; border-radius: 14px; cursor: pointer; font-weight: 600; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; transition: transform 0.2s; }
+        .btn-google:active { transform: scale(0.97); }
+        .btn-google img { width: 22px; height: 22px; }
+
+        /* Tabs */
+        .tabs { display: flex; background: var(--card-elevated); padding: 4px; border-radius: 12px; margin-bottom: 24px; }
+        .tab { flex: 1; text-align: center; padding: 10px; border-radius: 10px; font-weight: 600; font-size: 0.9rem; color: var(--text-secondary); cursor: pointer; transition: 0.3s; }
+        .tab.active { background: var(--card-bg); color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 0.5px solid var(--border); }
+        
+        /* Checkbox */
+        .checkbox-group { display: flex; align-items: center; gap: 12px; margin-top: 8px; background: var(--card-elevated); padding: 14px 16px; border-radius: 14px; border: 0.5px solid var(--border);}
+        .checkbox-group label { margin: 0; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.95rem; font-weight: 500;}
+        .checkbox-group input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer;}
+        
+        /* Dropdown */
+        .dropdown-wrapper { position: relative; }
+        .dropdown-menu { position: absolute; top: calc(100% + 8px); right: 0; background: var(--card-elevated); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); border: 0.5px solid var(--border); border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); min-width: 180px; z-index: 200; overflow: hidden; }
+        .dropdown-item { padding: 14px 16px; font-size: 0.9rem; font-weight: 500; cursor: pointer; color: var(--text-primary); transition: background 0.2s; }
+        .dropdown-item:hover { background: var(--border); }
+        .dropdown-item + .dropdown-item { border-top: 0.5px solid var(--border); }
 
         .action-cell { display: flex; gap: 8px; justify-content: flex-end; }
-        .action-btn { 
-            background: var(--card-elevated); border: 1px solid var(--border); color: var(--text-primary);
-            border-radius: 6px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: 0.9rem; transition: 0.2s;
-        }
-        .action-btn:hover { background: var(--accent); border-color: var(--accent); color: white;}
-        .action-btn.delete:hover { background: var(--danger); border-color: var(--danger); color: white;}
+        .action-btn { background: var(--card-elevated); border: 0.5px solid var(--border); color: var(--text-primary); border-radius: 10px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1rem; transition: 0.2s; }
+        .action-btn:hover { background: var(--border); }
+        
+        /* Progress Bar */
+        .maintenance-item { margin-bottom: 16px; }
+        .maintenance-header { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px; font-weight: 500;}
+        .progress-bg { background: var(--card-elevated); height: 10px; border-radius: 5px; overflow: hidden; border: 0.5px solid var(--border);}
+        .progress-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease; }
+        
+        .dashboard-mid { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 20px; min-width: 0; }
+        @media (min-width: 800px) { .dashboard-mid { grid-template-columns: 2fr 1fr; } }
+        .main-layout { display: grid; grid-template-columns: 1fr; gap: 20px; min-width: 0; }
+        @media (min-width: 800px) { .main-layout { grid-template-columns: 350px 1fr; } }
 
-        footer { text-align: center; margin-top: 30px; padding: 20px 0; color: var(--text-secondary); font-size: 0.8rem; border-top: 1px solid var(--border); width: 100%; }
+        footer { text-align: center; margin-top: 20px; padding: 20px 0; color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;}
+        .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
 <div id="loadingPage" class="auth-overlay">
-    <div style="display:flex; flex-direction:column; align-items:center; gap:15px;">
+    <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
         <div class="spinner"></div>
-        <p style="color:var(--text-secondary); margin:0;">Loading...</p>
     </div>
 </div>
 
 <div id="landingPage" class="auth-overlay hidden">
     <div class="auth-card center">
-        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 15px;">
-            <path d="M3 22v-8a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8"></path><path d="M11 22H3"></path><path d="M14 9V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v5"></path>
-            <path d="M14 9h6"></path><path d="M17 9v11a2 2 0 0 1-2 2h-2"></path>
-        </svg>
-        <h1>Vehicle Expenditure</h1>
-        <p>Please login or register to continue managing your fuel and maintenance logs safely.</p>
+        <h1>VEx</h1>
+        <p>Login to manage your vehicle expenditure safely in the cloud.</p>
         <button class="btn-google" onclick="signInWithGoogle()">
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google Logo">
             Continue with Google
@@ -209,19 +189,19 @@
 
 <div id="registrationPage" class="auth-overlay hidden">
     <div class="auth-card">
-        <h1 style="text-align: left;">Almost done!</h1>
-        <p style="text-align: left;">What motorcycle will you be tracking?</p>
+        <h1>Almost done!</h1>
+        <p>What motorcycle will you be tracking?</p>
         <div class="form-group">
             <label>Bike Model</label>
-            <input type="text" id="regBikeModel" placeholder="e.g. Pulsar N160, Hornet 2.0">
+            <input type="text" id="regBikeModel" placeholder="e.g. Pulsar N160">
         </div>
-        <button id="regBtn" class="btn" onclick="completeRegistration()">Start Tracking</button>
+        <button id="regBtn" class="btn" style="margin-top: 8px;" onclick="completeRegistration()">Start Tracking</button>
     </div>
 </div>
 
 <div id="settingsPage" class="auth-overlay hidden">
     <div class="auth-card">
-        <h2>App Settings</h2>
+        <h2>Settings</h2>
         <div class="form-group">
             <label>Currency</label>
             <select id="setCurrency">
@@ -246,7 +226,7 @@
                 <option value="gal">Gallons (gal)</option>
             </select>
         </div>
-        <div style="display: flex; gap: 10px; margin-top: 25px;">
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
             <button class="btn btn-outline" onclick="closeSettings()">Cancel</button>
             <button class="btn" onclick="saveSettings()">Save</button>
         </div>
@@ -256,17 +236,14 @@
 <div id="mainApp" class="app-wrapper hidden">
     <header>
         <div class="header-title">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 22v-8a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8"></path><path d="M11 22H3"></path><path d="M14 9V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v5"></path><path d="M14 9h6"></path><path d="M17 9v11a2 2 0 0 1-2 2h-2"></path>
-            </svg>
-            <h1>PitStop</h1>
+            <h1>Vehicle Expenditure (VEx)</h1>
         </div>
         <div class="header-actions">
             <div class="user-badge" id="displayBikeModel">Loading...</div>
             <button class="icon-btn" onclick="toggleTheme()" title="Toggle Light/Dark Mode">🌓</button>
             <button class="icon-btn" onclick="openSettings()" title="Settings">⚙️</button>
             <div class="dropdown-wrapper">
-                <button class="icon-btn" onclick="toggleDataMenu(event)" title="Import / Export Data">💾</button>
+                <button class="icon-btn" onclick="toggleDataMenu(event)" title="Data Options">💾</button>
                 <div class="dropdown-menu hidden" id="dataMenu">
                     <div class="dropdown-item" onclick="triggerImport()">📥 Import CSV</div>
                     <div class="dropdown-item" onclick="exportCSV()">📤 Export CSV</div>
@@ -298,11 +275,11 @@
 
     <div class="dashboard-mid">
         <div class="card">
-            <h3 id="chartTitle">Fuel Economy Trend</h3>
-            <div style="height: 180px; width: 100%;"><canvas id="economyChart"></canvas></div>
+            <h3 id="chartTitle">Economy Trend</h3>
+            <div style="height: 200px; width: 100%;"><canvas id="economyChart"></canvas></div>
         </div>
         <div class="card">
-            <h3>Maintenance Status</h3>
+            <h3>Maintenance</h3>
             <div id="maintenance-alerts"></div>
         </div>
     </div>
@@ -319,26 +296,26 @@
                 <input type="hidden" id="editId" value="">
                 
                 <div class="form-group"><label>Date</label><input type="date" id="date" required></div>
-                <div class="form-group"><label id="lblOdo">Current odometer</label><input type="number" id="odo" step="any" required></div>
+                <div class="form-group"><label id="lblOdo">Odometer</label><input type="number" id="odo" step="any" required></div>
                 <div class="form-group"><label id="lblCost">Total Cost</label><input type="number" id="totalCost" step="any" required oninput="calculateUnitCost()"></div>
                 
                 <div id="fuelFields">
-                    <div class="form-group"><label id="lblVol">Fuel volume</label><input type="number" id="volume" step="any" oninput="calculateUnitCost()"></div>
-                    <div class="form-group"><label id="lblUnit">Unit price</label><input type="number" id="unitPrice" step="any" readonly style="color: var(--text-secondary);"></div>
+                    <div class="form-group"><label id="lblVol">Volume</label><input type="number" id="volume" step="any" oninput="calculateUnitCost()"></div>
+                    <div class="form-group"><label id="lblUnit">Unit Price</label><input type="number" id="unitPrice" step="any" readonly style="color: var(--text-secondary);"></div>
                     <div class="checkbox-group">
-                        <label><input type="checkbox" id="isFullTank" checked> This was a Full Tank</label>
+                        <label><input type="checkbox" id="isFullTank" checked> Full Tank</label>
                     </div>
                 </div>
                 
-                <div class="form-group" style="margin-top: 15px;"><label id="notesLabel">Fuel station name</label><textarea id="notes" rows="1" placeholder="..."></textarea></div>
+                <div class="form-group" style="margin-top: 16px;"><label id="notesLabel">Station Name</label><textarea id="notes" rows="1" placeholder="..."></textarea></div>
                 
-                <button type="submit" id="saveBtn" class="btn">SAVE ENTRY</button>
-                <button type="button" id="cancelEditBtn" class="btn btn-outline hidden" style="margin-top: 10px;" onclick="cancelEdit()">CANCEL EDIT</button>
+                <button type="submit" id="saveBtn" class="btn" style="margin-top: 8px;">Save</button>
+                <button type="button" id="cancelEditBtn" class="btn btn-outline hidden" style="margin-top: 12px;" onclick="cancelEdit()">Cancel Edit</button>
             </form>
         </div>
 
         <div class="card">
-            <h2>Log History</h2>
+            <h2>History</h2>
             <div class="table-container">
                 <table id="logTable">
                     <thead>
@@ -350,7 +327,7 @@
                             <th id="thVol">Vol</th>
                             <th id="thEco">Eco</th>
                             <th>Notes</th>
-                            <th>Actions</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody id="logTableBody"></tbody>
@@ -359,13 +336,10 @@
         </div>
     </div>
 
-    <footer>This web app is developed by Kanon Al Mozadid. Copyright reserved.</footer>
+    <footer>Vehicle Expenditure (VEx) developed by Kanon Al Mozadid &copy;</footer>
 </div>
 
 <script>
-    // ==========================================
-    // FIREBASE CONFIGURATION
-    // ==========================================
     const firebaseConfig = {
         apiKey: "AIzaSyDZznwqirEhn7kk40ouixwB0hrmGCZGJ0A",
         authDomain: "vehicle-expenditure-85493.firebaseapp.com",
@@ -379,15 +353,10 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Explicitly request persistent login storage. Firebase silently falls back to
-    // in-memory (session-only) persistence if IndexedDB/localStorage isn't available
-    // (e.g. file:// origins, some private/embedded browser contexts) — this surfaces
-    // that failure instead of hiding it, even though it can't fix the underlying cause.
     firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch((err) => {
-        console.warn("Persistent login unavailable, session will not survive a refresh:", err.message);
+        console.warn("Persistent login unavailable:", err.message);
     });
 
-    // --- STATE VARIABLES ---
     let currentUser = null;
     let dbData = [];
     let myChart = null;
@@ -396,25 +365,24 @@
     
     document.getElementById('date').valueAsDate = new Date();
 
-    // --- THEME LOGIC ---
     function toggleTheme() {
         const currentTheme = document.documentElement.getAttribute('data-theme');
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', newTheme);
         localStorage.setItem('pitstop_theme', newTheme);
-        document.getElementById('themeColorMeta').setAttribute('content', newTheme === 'light' ? '#f4f6f8' : '#121212');
+        document.getElementById('themeColorMeta').setAttribute('content', newTheme === 'light' ? '#f2f2f7' : '#000000');
         if(myChart) {
-            myChart.options.scales.x.grid.color = newTheme === 'light' ? '#e2e8f0' : '#333333';
-            myChart.options.scales.y.grid.color = newTheme === 'light' ? '#e2e8f0' : '#333333';
+            myChart.options.scales.x.grid.color = newTheme === 'light' ? 'rgba(60, 60, 67, 0.1)' : 'rgba(255, 255, 255, 0.1)';
+            myChart.options.scales.y.grid.color = newTheme === 'light' ? 'rgba(60, 60, 67, 0.1)' : 'rgba(255, 255, 255, 0.1)';
             myChart.update();
         }
     }
     const savedTheme = localStorage.getItem('pitstop_theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
-    document.getElementById('themeColorMeta').setAttribute('content', savedTheme === 'light' ? '#f4f6f8' : '#121212');
+    document.getElementById('themeColorMeta').setAttribute('content', savedTheme === 'light' ? '#f2f2f7' : '#000000');
 
-    // --- AUTHENTICATION LOGIC ---
     firebase.auth().onAuthStateChanged((user) => {
+        document.getElementById('loadingPage').classList.add('hidden');
         if (user) {
             currentUser = user;
             checkRegistrationAndLoadApp();
@@ -451,7 +419,7 @@
     function completeRegistration() {
         const model = document.getElementById('regBikeModel').value.trim();
         if(model === "") { alert("Please enter a bike model."); return; }
-        document.getElementById('regBtn').innerText = "Saving to Cloud...";
+        document.getElementById('regBtn').innerText = "Saving...";
         
         db.collection('users').doc(currentUser.uid).set({ bikeModel: model, settings: userPrefs }, { merge: true })
         .then(() => {
@@ -466,7 +434,6 @@
         });
     }
 
-    // --- SETTINGS LOGIC ---
     function openSettings() {
         document.getElementById('setCurrency').value = userPrefs.currency;
         document.getElementById('setDistance').value = userPrefs.distance;
@@ -490,15 +457,15 @@
     }
 
     function updateLabelsWithPrefs() {
-        document.getElementById('lblOdo').innerText = `Current odometer (${userPrefs.distance})`;
+        document.getElementById('lblOdo').innerText = `Odometer (${userPrefs.distance})`;
         document.getElementById('lblCost').innerText = `Total Cost (${userPrefs.currency})`;
-        document.getElementById('lblVol').innerText = `Fuel volume (${userPrefs.volume})`;
-        document.getElementById('lblUnit').innerText = `Unit price (${userPrefs.currency}/${userPrefs.volume})`;
+        document.getElementById('lblVol').innerText = `Volume (${userPrefs.volume})`;
+        document.getElementById('lblUnit').innerText = `Unit Price (${userPrefs.currency}/${userPrefs.volume})`;
         document.getElementById('thOdo').innerText = `Odo (${userPrefs.distance})`;
         document.getElementById('thCost').innerText = `Cost (${userPrefs.currency})`;
         document.getElementById('thVol').innerText = `Vol (${userPrefs.volume})`;
         document.getElementById('thEco').innerText = `Eco (${userPrefs.distance}/${userPrefs.volume})`;
-        document.getElementById('chartTitle').innerText = `Fuel Economy Trend (${userPrefs.distance}/${userPrefs.volume})`;
+        document.getElementById('chartTitle').innerText = `Economy Trend (${userPrefs.distance}/${userPrefs.volume})`;
     }
 
     function showPage(pageId) {
@@ -506,7 +473,6 @@
         document.getElementById(pageId).classList.remove('hidden');
     }
 
-    // --- CORE APP LOGIC ---
     function switchType(type) {
         document.getElementById('entryType').value = type;
         document.getElementById('tab-fuel').classList.toggle('active', type === 'fuel');
@@ -515,13 +481,11 @@
         if(type === 'fuel') {
             fuelFields.style.display = 'block'; 
             document.getElementById('volume').required = true;
-            document.getElementById('notesLabel').innerText = "Fuel station name";
-            document.getElementById('notes').placeholder = "e.g. Trust Filling Station";
+            document.getElementById('notesLabel').innerText = "Station Name";
         } else {
             fuelFields.style.display = 'none'; 
             document.getElementById('volume').required = false;
-            document.getElementById('notesLabel').innerText = "Service / Parts details";
-            document.getElementById('notes').placeholder = "e.g. Engine Oil Change, Brake Pads...";
+            document.getElementById('notesLabel').innerText = "Service Details";
         }
     }
 
@@ -538,8 +502,8 @@
             const ctx = document.getElementById('economyChart').getContext('2d');
             myChart = new Chart(ctx, {
                 type: 'line',
-                data: { labels: [], datasets: [{ label: 'Economy', data: [], borderColor: '#ff6b00', backgroundColor: 'rgba(255, 107, 0, 0.1)', borderWidth: 2, pointBackgroundColor: '#1e1e1e', pointBorderColor: '#ff6b00', fill: true, tension: 0.3 }]},
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: savedTheme === 'light' ? '#e2e8f0' : '#333333' }, ticks: { color: '#a1a1aa' } }, y: { grid: { color: savedTheme === 'light' ? '#e2e8f0' : '#333333' }, ticks: { color: '#a1a1aa' } } } }
+                data: { labels: [], datasets: [{ label: 'Economy', data: [], borderColor: '#0a84ff', backgroundColor: 'rgba(10, 132, 255, 0.1)', borderWidth: 3, pointBackgroundColor: '#0a84ff', pointBorderColor: '#ffffff', fill: true, tension: 0.4 }]},
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: savedTheme === 'light' ? 'rgba(60, 60, 67, 0.1)' : 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'var(--text-secondary)' } }, y: { grid: { color: savedTheme === 'light' ? 'rgba(60, 60, 67, 0.1)' : 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'var(--text-secondary)' } } } }
             });
         }
 
@@ -552,9 +516,8 @@
             }, error => { console.error("Error listening to logs:", error); });
     }
 
-    // --- EDIT & DELETE LOGIC ---
     function deleteEntry(id) {
-        if(confirm("Are you sure you want to completely delete this entry?")) {
+        if(confirm("Delete this entry?")) {
             db.collection('users').doc(currentUser.uid).collection('logs').doc(id.toString()).delete()
             .catch(err => alert("Error deleting: " + err.message));
         }
@@ -576,11 +539,11 @@
         if(entry.type === 'fuel') {
             document.getElementById('volume').value = entry.volume || '';
             document.getElementById('unitPrice').value = entry.unitPrice || '';
-            document.getElementById('isFullTank').checked = entry.isFullTank !== false; // handle old data as true
+            document.getElementById('isFullTank').checked = entry.isFullTank !== false; 
         }
         
         document.getElementById('notes').value = entry.notes || '';
-        document.getElementById('saveBtn').innerText = "UPDATE ENTRY";
+        document.getElementById('saveBtn').innerText = "Update";
         document.getElementById('cancelEditBtn').classList.remove('hidden');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -591,7 +554,7 @@
         document.getElementById('logForm').reset();
         document.getElementById('isFullTank').checked = true;
         document.getElementById('date').valueAsDate = new Date();
-        document.getElementById('saveBtn').innerText = "SAVE ENTRY";
+        document.getElementById('saveBtn').innerText = "Save";
         document.getElementById('cancelEditBtn').classList.add('hidden');
     }
 
@@ -601,7 +564,7 @@
         const editId = document.getElementById('editId').value;
         const entryId = editId ? parseInt(editId) : Date.now();
         
-        saveBtn.innerText = "SAVING...";
+        saveBtn.innerText = "Saving...";
         
         const isFuel = document.getElementById('entryType').value === 'fuel';
         const entry = {
@@ -618,12 +581,12 @@
 
         db.collection('users').doc(currentUser.uid).collection('logs').doc(entryId.toString()).set(entry)
         .then(() => {
-            saveBtn.innerText = editId ? "UPDATED!" : "SAVED!";
+            saveBtn.innerText = editId ? "Updated!" : "Saved!";
             setTimeout(() => { cancelEdit(); }, 1200);
         })
         .catch(error => {
             alert("Error saving: " + error.message);
-            saveBtn.innerText = editId ? "UPDATE ENTRY" : "SAVE ENTRY";
+            saveBtn.innerText = editId ? "Update" : "Save";
         });
     }
 
@@ -636,9 +599,6 @@
         let totalDistance = highestOdo > lowestOdo ? highestOdo - lowestOdo : 0;
         let chartDates = [], chartData = [], lastServiceOdo = lowestOdo;
 
-        // Fill-to-fill economy: a distance is only divisible by a fuel amount when the
-        // interval starts AND ends on a full tank (fuel-in = fuel-burned over that stretch).
-        // Any partial fills in between must be added to the total, not ignored.
         let lastFullOdo = null;
         let volSinceLastFull = 0;
 
@@ -658,14 +618,11 @@
                         const diff = item.odo - lastFullOdo;
                         const kml = diff / volSinceLastFull;
                         item.calculatedMileage = kml;
-                        // Sanity guard against data-entry typos (e.g. odo/volume swapped),
-                        // not a real cap on the calculation itself.
                         if(kml > 0 && kml < 100) {
                             chartDates.push(item.date.substring(5));
                             chartData.push(kml.toFixed(1));
                         }
                     }
-                    // This full tank is the new baseline for the next interval.
                     lastFullOdo = item.odo;
                     volSinceLastFull = 0;
                 }
@@ -687,8 +644,8 @@
         const tbody = document.getElementById('logTableBody'); tbody.innerHTML = '';
         [...sortedData].reverse().forEach(item => {
             const tr = document.createElement('tr');
-            let isFull = item.type === 'fuel' ? (item.isFullTank !== false ? '✅' : '⚠️ Partial') : '-';
-            let volDisplay = item.volume ? `${item.volume}${userPrefs.volume} <br><small style="color:var(--text-secondary)">${isFull}</small>` : '-';
+            let isFull = item.type === 'fuel' ? (item.isFullTank !== false ? '✅' : '⚠️') : '-';
+            let volDisplay = item.volume ? `${item.volume}${userPrefs.volume} <span style="font-size:0.8rem; margin-left:4px;">${isFull}</span>` : '-';
             
             tr.innerHTML = `
                 <td style="white-space: nowrap;">${item.date}</td>
@@ -696,12 +653,12 @@
                 <td>${item.odo.toLocaleString()}</td>
                 <td>${userPrefs.currency}${item.totalCost.toFixed(0)}</td>
                 <td>${volDisplay}</td>
-                <td style="color:var(--accent); font-weight:600;">${item.calculatedMileage ? item.calculatedMileage.toFixed(1) : '-'}</td>
-                <td style="color:var(--text-secondary); min-width: 120px; font-size: 0.8rem;">${item.notes || ''}</td>
+                <td style="color:var(--accent); font-weight:700;">${item.calculatedMileage ? item.calculatedMileage.toFixed(1) : '-'}</td>
+                <td style="color:var(--text-secondary); min-width: 120px; font-size: 0.85rem;">${item.notes || ''}</td>
                 <td>
                     <div class="action-cell">
                         <button class="action-btn" title="Edit" onclick="editEntry(${item.id})">✏️</button>
-                        <button class="action-btn delete" title="Delete" onclick="deleteEntry(${item.id})">🗑️</button>
+                        <button class="action-btn" title="Delete" onclick="deleteEntry(${item.id})" style="color:var(--danger)">🗑️</button>
                     </div>
                 </td>
             `;
@@ -712,10 +669,9 @@
     function renderMaintenanceStatus(currentOdo, lastServiceOdo) {
         const container = document.getElementById('maintenance-alerts');
         const kmSinceService = currentOdo - lastServiceOdo;
-        const tasks = [ { name: "Chain Lube & Clean", interval: 500, color: "#3b82f6" }, { name: "Engine Oil Change", interval: 2000, color: "#ff6b00" } ];
+        const tasks = [ { name: "Chain Lube & Clean", interval: 500, color: "var(--accent)" }, { name: "Engine Oil Change", interval: 2000, color: "#ff9f0a" } ];
         let html = '';
         tasks.forEach(task => {
-            // Adjust interval purely visually if they chose Miles
             let interval = userPrefs.distance === 'mi' ? Math.round(task.interval * 0.621371) : task.interval;
             let percentage = Math.min((kmSinceService / interval) * 100, 100);
             let remaining = interval - kmSinceService;
@@ -723,59 +679,31 @@
             let barColor = percentage > 90 ? 'var(--danger)' : task.color;
             html += `<div class="maintenance-item"><div class="maintenance-header"><span style="color: var(--text-primary); font-weight:500;">${task.name}</span><span style="color: ${percentage > 90 ? 'var(--danger)' : 'var(--text-secondary)'}; font-weight: 600; font-size:0.8rem;">${statusText}</span></div><div class="progress-bg"><div class="progress-fill" style="width: ${percentage}%; background: ${barColor};"></div></div></div>`;
         });
-        container.innerHTML = html || '<p>No data yet</p>';
+        container.innerHTML = html || '<p>No data</p>';
     }
 
-    // --- DATA MENU (Import / Export dropdown) ---
-    function toggleDataMenu(e) {
-        e.stopPropagation();
-        document.getElementById('dataMenu').classList.toggle('hidden');
-    }
-    function closeDataMenu() {
-        document.getElementById('dataMenu').classList.add('hidden');
-    }
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.dropdown-wrapper')) closeDataMenu();
-    });
-    function triggerImport() {
-        closeDataMenu();
-        document.getElementById('csvFile').click();
-    }
+    function toggleDataMenu(e) { e.stopPropagation(); document.getElementById('dataMenu').classList.toggle('hidden'); }
+    function closeDataMenu() { document.getElementById('dataMenu').classList.add('hidden'); }
+    document.addEventListener('click', (e) => { if (!e.target.closest('.dropdown-wrapper')) closeDataMenu(); });
+    function triggerImport() { closeDataMenu(); document.getElementById('csvFile').click(); }
 
     function exportCSV() {
         closeDataMenu();
-        if (dbData.length === 0) { alert("No data to export yet."); return; }
-
+        if (dbData.length === 0) { alert("No data."); return; }
         const header = "Type,Odometer,Date,TotalCost,Volume,UnitPrice,Notes,IsFullTank";
         const sorted = [...dbData].sort((a, b) => new Date(a.date) - new Date(b.date));
-
         const rows = sorted.map(item => {
             const safeNotes = (item.notes || '').replace(/"/g, '""');
-            return [
-                item.type,
-                item.odo,
-                item.date,
-                item.totalCost,
-                item.volume ?? '',
-                item.unitPrice ?? '',
-                `"${safeNotes}"`,
-                item.type === 'fuel' ? (item.isFullTank !== false) : ''
-            ].join(',');
+            return [ item.type, item.odo, item.date, item.totalCost, item.volume ?? '', item.unitPrice ?? '', `"${safeNotes}"`, item.type === 'fuel' ? (item.isFullTank !== false) : '' ].join(',');
         });
-
         const csvContent = [header, ...rows].join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         const bikeModel = (document.getElementById('displayBikeModel').innerText || 'Bike').replace(/\s+/g, '_');
-        const today = new Date().toISOString().substring(0, 10);
-
         a.href = url;
-        a.download = `PitStop_${bikeModel}_${today}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        a.download = `VEx_${bikeModel}_${new Date().toISOString().substring(0, 10)}.csv`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
     }
 
     function handleCSVImport(event) {
@@ -786,7 +714,6 @@
             const lines = e.target.result.split('\n');
             let importCount = 0;
             let batch = db.batch();
-            
             for(let i = 1; i < lines.length; i++) {
                 if(!lines[i].trim()) continue;
                 const cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
@@ -797,7 +724,6 @@
                     let formattedDate = dateObj.getFullYear() + '-' + String(dateObj.getMonth() + 1).padStart(2, '0') + '-' + String(dateObj.getDate()).padStart(2, '0');
                     let odo = parseFloat(cols[1]), totalCost = parseFloat(cols[3]);
                     if(isNaN(totalCost)) totalCost = parseFloat(cols[7]) || 0; 
-                    
                     let entryId = Date.now() + i;
                     let fullTankRaw = cols[7] !== undefined ? cols[7].replace(/"/g, '').trim().toLowerCase() : '';
                     let entry = {
@@ -805,17 +731,16 @@
                         totalCost: isNaN(totalCost) ? 0 : totalCost,
                         volume: isNaN(parseFloat(cols[4])) ? null : parseFloat(cols[4]),
                         unitPrice: isNaN(parseFloat(cols[5])) ? null : parseFloat(cols[5]),
-                        isFullTank: fullTankRaw === '' ? true : fullTankRaw === 'true', // respects exported value; old CSVs without this column still default to full tank
+                        isFullTank: fullTankRaw === '' ? true : fullTankRaw === 'true', 
                         notes: cols[6] ? cols[6].replace(/"/g, '').trim() : ''
                     };
-                    
                     let docRef = db.collection('users').doc(currentUser.uid).collection('logs').doc(entryId.toString());
                     batch.set(docRef, entry);
                     importCount++;
                 }
             }
             if(importCount > 0) {
-                batch.commit().then(() => alert(`Imported ${importCount} entries to Cloud!`))
+                batch.commit().then(() => alert(`Imported ${importCount} entries!`))
                 .catch(err => alert("Error importing: " + err.message));
             }
             event.target.value = '';
