@@ -9,10 +9,8 @@
     <meta name="theme-color" content="#121212">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏍️</text></svg>">
     
-    <!-- Firebase Compat SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
@@ -65,7 +63,7 @@
         .header-title h1 { margin: 0; font-size: 1.5rem; font-weight: 600; color: var(--accent); }
         @media (min-width: 600px) { .header-title h1 { font-size: 1.8rem; } }
         
-        .header-actions { display: flex; align-items: center; gap: 10px; }
+        .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end;}
         .user-badge { background: var(--card-elevated); padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 6px;}
 
         h2 { margin: 0 0 15px 0; font-size: 1.2rem; font-weight: 500; }
@@ -117,7 +115,6 @@
 </head>
 <body>
 
-<!-- 1. LANDING PAGE -->
 <div id="landingPage" class="auth-overlay">
     <div class="auth-card">
         <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 15px;">
@@ -134,7 +131,6 @@
     </div>
 </div>
 
-<!-- 2. BIKE REGISTRATION PAGE (Shown once after first login) -->
 <div id="registrationPage" class="auth-overlay hidden">
     <div class="auth-card">
         <h1>Almost done!</h1>
@@ -147,7 +143,6 @@
     </div>
 </div>
 
-<!-- 3. MAIN DASHBOARD -->
 <div id="mainApp" class="app-wrapper hidden">
     <header>
         <div class="header-title">
@@ -239,23 +234,20 @@
 
 <script>
     // ==========================================
-    // ⚠️ STEP 2: PASTE YOUR FIREBASE CONFIG HERE
+    // FIREBASE CONFIGURATION (Using your specific keys)
     // ==========================================
     const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_PROJECT_ID.appspot.com",
-        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-        appId: "YOUR_APP_ID"
+        apiKey: "AIzaSyDZznwqirEhn7kk40ouixwB0hrmGCZGJ0A",
+        authDomain: "vehicle-expenditure-85493.firebaseapp.com",
+        projectId: "vehicle-expenditure-85493",
+        storageBucket: "vehicle-expenditure-85493.firebasestorage.app",
+        messagingSenderId: "811209719201",
+        appId: "1:811209719201:web:b860a9b368b1756fdd1fe0",
+        measurementId: "G-WE7EWWQSML"
     };
 
-    // Initialize Firebase ONLY if config is valid
-    if(firebaseConfig.apiKey !== "YOUR_API_KEY") {
-        firebase.initializeApp(firebaseConfig);
-    } else {
-        console.warn("Firebase not configured. Please add your keys.");
-    }
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
 
     // --- STATE VARIABLES ---
     let currentUser = null;
@@ -264,23 +256,17 @@
     document.getElementById('date').valueAsDate = new Date();
 
     // --- AUTHENTICATION LOGIC ---
-    if (typeof firebase !== 'undefined') {
-        firebase.auth().onAuthStateChanged((user) => {
-            if (user) {
-                currentUser = user;
-                checkRegistrationAndLoadApp();
-            } else {
-                currentUser = null;
-                showPage('landingPage');
-            }
-        });
-    }
+    firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+            currentUser = user;
+            checkRegistrationAndLoadApp();
+        } else {
+            currentUser = null;
+            showPage('landingPage');
+        }
+    });
 
     function signInWithGoogle() {
-        if(firebaseConfig.apiKey === "YOUR_API_KEY") {
-            alert("Developer Note: You need to paste your Firebase config keys into the code before Google Login will work!");
-            return;
-        }
         const provider = new firebase.auth.GoogleAuthProvider();
         firebase.auth().signInWithPopup(provider).catch((error) => alert(error.message));
     }
@@ -290,7 +276,6 @@
     }
 
     function checkRegistrationAndLoadApp() {
-        // Check if we have a bike model saved for this specific user
         const bikeModel = localStorage.getItem(`pitstop_bike_${currentUser.uid}`);
         if(bikeModel) {
             document.getElementById('displayBikeModel').innerText = bikeModel;
@@ -342,11 +327,10 @@
     }
 
     function initApp() {
-        // Data is now saved based on the specific logged-in user!
         const storageKey = `pitstop_data_${currentUser.uid}`;
         const localStore = localStorage.getItem(storageKey);
         if (localStore) dbData = JSON.parse(localStore);
-        else dbData = []; // Reset if logging into a new account
+        else dbData = []; 
         
         if(!myChart) {
             const ctx = document.getElementById('economyChart').getContext('2d');
